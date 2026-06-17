@@ -1,0 +1,2521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#C9B8E8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="stimmilab">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon.svg">
+<title>stimmilab</title>
+<style>
+/* ── Variables ─────────────────────────────────────────────── */
+:root {
+  --c-primary:   #C9B8E8;
+  --c-secondary: #F8BBD9;
+  --c-bg:        #FFF8F0;
+  --c-white:     #FFFFFF;
+  --c-text:      #6B4FA0;
+  --c-text-soft: #a07cc8;
+  --c-border:    #e0d0f5;
+  --c-positive:  #5cb88a;
+  --c-negative:  #d96b7a;
+  --c-danger:    #e05568;
+  --r-card: 18px;
+  --r-modal: 22px;
+  --r-btn: 10px;
+  --shadow-card: 0 4px 18px rgba(107,79,160,.10);
+  --shadow-modal: 0 10px 48px rgba(107,79,160,.18);
+  --tr: .18s ease;
+}
+
+/* ── Reset ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--c-bg);
+  color: var(--c-text);
+  min-height: 100vh;
+}
+img { display: block; }
+button { cursor: pointer; font-family: inherit; }
+input, select, textarea { font-family: inherit; }
+
+/* ── Header ─────────────────────────────────────────────────── */
+header {
+  background: linear-gradient(135deg, var(--c-primary) 0%, var(--c-secondary) 100%);
+  padding: 1.4rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 12px rgba(107,79,160,.15);
+}
+.header-logo {
+  width: 44px; height: 44px;
+  background: var(--c-white);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem;
+  box-shadow: 0 2px 8px rgba(107,79,160,.15);
+  flex-shrink: 0;
+}
+.header-title {
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -.5px;
+  color: var(--c-text);
+}
+.header-sub {
+  font-size: .8rem;
+  color: var(--c-text-soft);
+  margin-top: .1rem;
+}
+.header-spacer { flex: 1; }
+.btn-clear-data {
+  background: rgba(255,255,255,.55);
+  border: 1.5px solid rgba(224,85,104,.4);
+  color: var(--c-danger);
+  font-size: .78rem;
+  font-weight: 600;
+  padding: .4rem .85rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: var(--tr);
+  white-space: nowrap;
+}
+.btn-clear-data:hover { background: rgba(224,85,104,.12); }
+
+/* ── Nav tabs ───────────────────────────────────────────────── */
+nav {
+  background: var(--c-white);
+  display: flex;
+  border-bottom: 2px solid var(--c-border);
+  padding: 0 2rem;
+  gap: .25rem;
+}
+.nav-tab {
+  padding: .9rem 1.6rem;
+  border: none;
+  background: transparent;
+  color: var(--c-text-soft);
+  font-size: .95rem;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: var(--tr);
+}
+.nav-tab:hover { color: var(--c-text); }
+.nav-tab.active {
+  color: var(--c-text);
+  border-bottom-color: var(--c-text);
+  font-weight: 600;
+}
+
+/* ── Main content ───────────────────────────────────────────── */
+main { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+
+.tab-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+.tab-header h2 { font-size: 1.3rem; font-weight: 600; }
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.btn {
+  padding: .55rem 1.25rem;
+  border: none;
+  border-radius: var(--r-btn);
+  font-size: .9rem;
+  font-weight: 600;
+  transition: var(--tr);
+  display: inline-flex; align-items: center; gap: .4rem;
+}
+.btn-primary   { background: var(--c-primary); color: var(--c-text); }
+.btn-primary:hover { background: #b9a4dc; }
+.btn-secondary { background: var(--c-secondary); color: var(--c-text); }
+.btn-secondary:hover { background: #f0a8cc; }
+.btn-danger {
+  background: transparent;
+  color: var(--c-danger);
+  border: 1.5px solid var(--c-danger);
+}
+.btn-danger:hover { background: #fde8eb; }
+.btn-ghost {
+  background: transparent;
+  color: var(--c-text-soft);
+  border: 1.5px solid var(--c-border);
+}
+.btn-ghost:hover { background: var(--c-bg); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-sm { padding: .3rem .75rem; font-size: .8rem; }
+.btn-icon {
+  background: transparent; border: none;
+  padding: .3rem .4rem;
+  color: var(--c-text-soft);
+  border-radius: 6px;
+  transition: var(--tr);
+  flex-shrink: 0;
+}
+.btn-icon:hover { background: var(--c-bg); color: var(--c-danger); }
+
+/* ── Product grid ───────────────────────────────────────────── */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.25rem;
+}
+.product-card {
+  background: var(--c-white);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: var(--tr);
+  overflow: hidden;
+  border: 1.5px solid transparent;
+}
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 28px rgba(107,79,160,.16);
+  border-color: var(--c-primary);
+}
+.product-card__img {
+  width: 100%; height: 150px;
+  object-fit: cover;
+  background: linear-gradient(135deg, #f0eafa, #fde8f3);
+}
+.product-card__body { padding: .9rem 1rem 1rem; }
+.product-card__name {
+  font-size: .95rem; font-weight: 600;
+  margin-bottom: .65rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.product-card__stats { display: flex; gap: .5rem; flex-wrap: wrap; }
+.stat {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--c-bg); border-radius: 8px; padding: .35rem .4rem;
+}
+.stat label {
+  font-size: .62rem; color: var(--c-text-soft);
+  text-align: center; line-height: 1.2; font-weight: 500;
+}
+.stat strong { font-size: 1.1rem; font-weight: 700; line-height: 1.3; }
+
+/* ── Empty state ────────────────────────────────────────────── */
+.empty-state {
+  text-align: center; padding: 4rem 2rem; color: var(--c-text-soft);
+}
+.empty-state .empty-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+.empty-state h3 { font-size: 1.1rem; margin-bottom: .4rem; }
+.empty-state p  { font-size: .88rem; }
+
+/* ── Modal overlay ──────────────────────────────────────────── */
+#modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(107,79,160,.25); z-index: 99;
+  backdrop-filter: blur(2px);
+}
+#modal-overlay.active { display: block; }
+
+/* ── Modals ─────────────────────────────────────────────────── */
+.modal {
+  display: none; position: fixed; inset: 0; z-index: 100;
+  align-items: center; justify-content: center; padding: 1rem;
+}
+.modal.active { display: flex; }
+.modal__box {
+  background: var(--c-white); border-radius: var(--r-modal);
+  padding: 2rem; width: 100%; max-width: 520px;
+  max-height: 88vh; overflow-y: auto;
+  box-shadow: var(--shadow-modal); animation: modalIn .2s ease;
+}
+.modal__box--wide { max-width: 680px; }
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal__header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+.modal__title { font-size: 1.1rem; font-weight: 700; }
+.modal__close {
+  width: 32px; height: 32px; border: none; background: var(--c-bg);
+  border-radius: 50%; font-size: 1.1rem; color: var(--c-text-soft);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: var(--tr); flex-shrink: 0;
+}
+.modal__close:hover { background: var(--c-border); color: var(--c-text); }
+
+/* ── Forms ──────────────────────────────────────────────────── */
+.form-group { margin-bottom: 1rem; }
+.form-group label {
+  display: block; font-size: .82rem; font-weight: 600;
+  margin-bottom: .35rem; color: var(--c-text-soft);
+}
+.form-group input,
+.form-group select {
+  width: 100%; padding: .6rem .85rem;
+  border: 1.5px solid var(--c-border); border-radius: 9px;
+  font-size: .9rem; color: var(--c-text); background: var(--c-white);
+  transition: var(--tr); outline: none;
+}
+.form-group input:focus,
+.form-group select:focus { border-color: var(--c-primary); box-shadow: 0 0 0 3px rgba(201,184,232,.25); }
+.form-row   { display: grid; gap: .75rem; }
+.form-row-2 { grid-template-columns: 1fr 1fr; }
+.form-actions {
+  display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.25rem;
+}
+.field-error { font-size: .78rem; color: var(--c-danger); margin-top: .25rem; display: none; }
+.field-error.show { display: block; }
+
+/* ── Product detail ─────────────────────────────────────────── */
+.detail-img-wrap {
+  position: relative; width: 100%; height: 180px;
+  border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem;
+  cursor: pointer; background: linear-gradient(135deg, #f0eafa, #fde8f3);
+}
+.detail-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.detail-img-overlay {
+  position: absolute; inset: 0; background: rgba(107,79,160,.35);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: var(--tr);
+  color: white; font-size: .85rem; font-weight: 600; gap: .4rem;
+}
+.detail-img-wrap:hover .detail-img-overlay { opacity: 1; }
+.detail-meta { display: flex; gap: 1rem; align-items: baseline; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.detail-name { font-size: 1.2rem; font-weight: 700; }
+.detail-price { font-size: 1rem; font-weight: 600; color: var(--c-text-soft); }
+
+/* ── Color table ────────────────────────────────────────────── */
+.color-table-wrap { overflow-x: auto; margin-bottom: 1.25rem; }
+table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+thead th {
+  background: rgba(201,184,232,.3); padding: .6rem .75rem;
+  text-align: left; font-weight: 600; font-size: .8rem; color: var(--c-text-soft);
+}
+thead th:first-child { border-radius: 8px 0 0 8px; }
+thead th:last-child  { border-radius: 0 8px 8px 0; }
+tbody td { padding: .6rem .75rem; border-bottom: 1px solid var(--c-bg); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: #faf6ff; }
+.inline-edit {
+  width: 60px; padding: .25rem .4rem; border: 1.5px solid var(--c-border);
+  border-radius: 6px; font-size: .88rem; color: var(--c-text);
+  background: var(--c-white); text-align: center;
+}
+.inline-edit:focus { border-color: var(--c-primary); outline: none; }
+.badge-available {
+  display: inline-block; background: rgba(92,184,138,.15); color: var(--c-positive);
+  border-radius: 20px; padding: .15rem .6rem; font-weight: 700; font-size: .85rem;
+}
+.badge-zero { background: rgba(217,107,122,.12); color: var(--c-negative); }
+.badge-transit {
+  display: inline-block; background: rgba(255,180,60,.15); color: #b87a00;
+  border-radius: 20px; padding: .1rem .55rem; font-size: .72rem; font-weight: 700;
+}
+.badge-received {
+  display: inline-block; background: rgba(92,184,138,.12); color: var(--c-positive);
+  border-radius: 20px; padding: .1rem .55rem; font-size: .72rem; font-weight: 700;
+}
+.transit-card { padding: 1rem; }
+.transit-card__name { font-weight: 700; font-size: 1rem; margin-bottom: .6rem; color: var(--c-text); }
+.transit-color-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .4rem 0; border-bottom: 1px solid var(--c-bg);
+  font-size: .88rem; gap: .5rem;
+}
+.transit-color-row:last-child { border-bottom: none; }
+.transit-color-info { flex: 1; }
+.transit-color-info strong { display: block; }
+.transit-color-info span { font-size: .76rem; color: var(--c-text-soft); }
+.add-color-form {
+  display: flex; gap: .5rem; align-items: flex-end; flex-wrap: wrap;
+  padding: .75rem; background: var(--c-bg); border-radius: 10px; margin-bottom: 1rem;
+}
+.add-color-form .form-group { margin-bottom: 0; flex: 1; min-width: 100px; }
+.add-color-form .form-group input { font-size: .85rem; padding: .5rem .7rem; }
+
+/* ── Reservations list ──────────────────────────────────────── */
+.reservation-row {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .55rem .75rem; background: var(--c-bg); border-radius: 8px;
+  margin-bottom: .4rem;
+}
+.reservation-row .res-name  { flex: 1; font-weight: 600; font-size: .9rem; }
+.reservation-row .res-qty   { font-size: .85rem; color: var(--c-text-soft); white-space: nowrap; }
+.reservation-row .res-date  { font-size: .75rem; color: var(--c-text-soft); white-space: nowrap; }
+.reservations-empty { text-align:center; padding:1.25rem; color:var(--c-text-soft); font-size:.88rem; }
+
+/* ── Edit colors list ──────────────────────────────────────── */
+.edit-colors-list { display: flex; flex-direction: column; gap: .4rem; }
+.edit-color-row {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .45rem .75rem;
+  background: var(--c-bg); border-radius: 8px;
+}
+.edit-color-row span { flex: 1; font-size: .9rem; font-weight: 500; }
+.edit-color-row .btn-icon { color: var(--c-danger); }
+
+/* ── Sell modal ─────────────────────────────────────────────── */
+.sell-info { display: flex; gap: .75rem; margin-bottom: 1.25rem; }
+.sell-info-block {
+  flex: 1; background: var(--c-bg); border-radius: 10px;
+  padding: .75rem 1rem; text-align: center;
+}
+.sell-info-block label { font-size: .75rem; color: var(--c-text-soft); display: block; margin-bottom: .2rem; }
+.sell-info-block strong { font-size: 1.05rem; font-weight: 700; }
+.sell-subtotal {
+  font-size: 1.3rem; font-weight: 700; text-align: center; padding: .75rem;
+  background: linear-gradient(135deg, rgba(201,184,232,.2), rgba(248,187,217,.2));
+  border-radius: 10px; margin-top: .5rem; color: var(--c-text);
+}
+.sell-res-chip {
+  padding: .3rem .75rem; border-radius: 20px; border: 1.5px solid var(--c-primary);
+  background: transparent; color: var(--c-text); font-size: .82rem; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.sell-res-chip:hover { background: rgba(201,184,232,.25); }
+.sell-res-chip.active { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
+
+/* ── Finanzas ───────────────────────────────────────────────── */
+.finanzas-sections { display: flex; flex-direction: column; gap: 2rem; }
+.finanzas-card {
+  background: var(--c-white); border-radius: var(--r-card);
+  box-shadow: var(--shadow-card); overflow: hidden;
+}
+.finanzas-card__header {
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, rgba(201,184,232,.3), rgba(248,187,217,.2));
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: .5rem;
+}
+.finanzas-card__header h3 { font-size: 1rem; font-weight: 700; }
+.finanzas-card__body { padding: 1.25rem 1.5rem; }
+
+/* Purchase form */
+.purchase-items-list { display: flex; flex-direction: column; gap: .5rem; margin-bottom: .75rem; }
+.purchase-item-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: .5rem; align-items: center;
+}
+.purchase-item-row select,
+.purchase-item-row input {
+  padding: .45rem .6rem;
+  border: 1.5px solid var(--c-border);
+  border-radius: 8px; font-size: .85rem;
+  color: var(--c-text); background: var(--c-white);
+  outline: none; transition: var(--tr);
+  min-width: 0; width: 100%;
+}
+.purchase-item-row select:focus,
+.purchase-item-row input:focus { border-color: var(--c-primary); }
+.purchase-items-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: .5rem; padding: 0 0 .35rem;
+  font-size: .75rem; font-weight: 600; color: var(--c-text-soft);
+}
+.extra-costs {
+  padding: .75rem 0;
+  border-top: 1.5px dashed var(--c-border);
+  margin-top: .5rem;
+}
+.extra-costs-title {
+  font-size: .78rem; font-weight: 600; color: var(--c-text-soft);
+  margin-bottom: .6rem;
+}
+.extra-costs .form-row-2 .form-group { margin-bottom: 0; }
+.extra-costs .form-group input {
+  padding: .45rem .7rem; font-size: .88rem;
+}
+.purchase-total-row {
+  display: flex; justify-content: flex-end; align-items: center;
+  gap: 1rem; padding: .75rem 0 0;
+  border-top: 1.5px solid var(--c-bg); margin-top: .25rem; font-weight: 600;
+}
+.purchase-total-amount { font-size: 1.15rem; font-weight: 700; }
+
+/* History tables */
+.history-table-wrap { overflow-x: auto; }
+.history-empty { text-align: center; padding: 2rem; color: var(--c-text-soft); font-size: .88rem; }
+
+/* Balance */
+.balance-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.balance-block {
+  text-align: center; padding: 1.25rem 1rem;
+  border-radius: 12px; background: var(--c-bg);
+}
+.balance-block label {
+  display: block; font-size: .78rem; font-weight: 600;
+  color: var(--c-text-soft); margin-bottom: .4rem;
+}
+.balance-block .balance-value { font-size: 1.3rem; font-weight: 800; }
+.balance-block--net .balance-value { color: var(--c-text); }
+.balance-block--net.positive .balance-value { color: var(--c-positive); }
+.balance-block--net.negative .balance-value { color: var(--c-negative); }
+
+/* ── Toast ──────────────────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+  background: var(--c-text); color: white;
+  padding: .7rem 1.5rem; border-radius: 30px;
+  font-size: .88rem; font-weight: 600; z-index: 200;
+  opacity: 0; transition: opacity .25s ease; pointer-events: none; white-space: nowrap;
+}
+#toast.show { opacity: 1; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Warning banner ─────────────────────────────────────────── */
+#storage-warning {
+  display: none; background: #fff3cd; color: #856404;
+  padding: .6rem 2rem; font-size: .82rem; text-align: center;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  main { padding: 1rem; }
+  header { padding: 1rem 1.25rem; }
+  .balance-grid { grid-template-columns: 1fr; }
+  .purchase-item-row { grid-template-columns: 1fr 1fr auto; }
+  .purchase-item-row select:nth-child(1) { grid-column: 1 / -1; }
+  .purchase-item-row select:nth-child(2) { grid-column: 1 / -1; }
+  .purchase-items-header { display: none; }
+  .modal__box { padding: 1.25rem; }
+  .btn-clear-data span { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:var(--c-bg);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:1rem">
+  <div style="width:44px;height:44px;border:4px solid var(--c-border);border-top-color:var(--c-primary);border-radius:50%;animation:spin .8s linear infinite"></div>
+  <p style="color:var(--c-text-soft);font-size:.9rem">Cargando datos…</p>
+</div>
+
+<div id="storage-warning" style="display:none">⚠️ localStorage no disponible — los datos no se guardarán al cerrar.</div>
+
+<header>
+  <div class="header-logo">🌸</div>
+  <div>
+    <div class="header-title">stimmilab</div>
+    <div class="header-sub">gestión de tienda</div>
+  </div>
+  <div class="header-spacer"></div>
+</header>
+
+<nav>
+  <button class="nav-tab active" data-tab="inventario">📦 Inventario</button>
+  <button class="nav-tab" data-tab="finanzas">💰 Finanzas</button>
+  <button class="nav-tab" data-tab="transito" id="nav-transito" style="margin-left:auto">🚚 En tránsito</button>
+</nav>
+
+<main>
+  <!-- ── Tab Inventario ── -->
+  <section id="tab-inventario">
+    <div class="tab-header">
+      <h2>Inventario</h2>
+    </div>
+    <div id="product-grid" class="product-grid"></div>
+    <div id="empty-inventory" class="empty-state" style="display:none">
+      <div class="empty-icon">📦</div>
+      <h3>Sin productos aún</h3>
+      <p>Los productos se crean al registrar una compra en la pestaña <strong>Finanzas</strong>.</p>
+    </div>
+  </section>
+
+  <!-- ── Tab En tránsito ── -->
+  <section id="tab-transito" style="display:none">
+    <div class="tab-header"><h2>Pedidos en tránsito</h2></div>
+    <div id="transit-grid" class="product-grid"></div>
+    <div id="empty-transit" class="empty-state" style="display:none">
+      <div class="empty-icon">🚚</div>
+      <h3>Sin pedidos en tránsito</h3>
+      <p>Cuando registres una compra quedará aquí hasta que la marques como recibida.</p>
+    </div>
+  </section>
+
+  <!-- ── Tab Finanzas ── -->
+  <section id="tab-finanzas" style="display:none">
+    <div class="tab-header"><h2>Finanzas</h2></div>
+    <div class="finanzas-sections">
+
+      <!-- Balance -->
+      <div class="finanzas-card">
+        <div class="finanzas-card__header"><h3>📊 Balance</h3></div>
+        <div class="finanzas-card__body">
+          <div class="balance-grid">
+            <div class="balance-block">
+              <label>Total Gastado</label>
+              <div class="balance-value" id="bal-spent">$0</div>
+            </div>
+            <div class="balance-block">
+              <label>Total Ganado</label>
+              <div class="balance-value" id="bal-earned">$0</div>
+            </div>
+            <div class="balance-block balance-block--net" id="bal-net-block">
+              <label>Balance Neto</label>
+              <div class="balance-value" id="bal-net">$0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Registrar Compra -->
+      <div class="finanzas-card">
+        <div class="finanzas-card__header"><h3>🛒 Registrar Compra</h3></div>
+        <div class="finanzas-card__body">
+          <form id="form-purchase" novalidate>
+            <div class="purchase-items-header">
+              <span>Producto</span><span>Color</span><span>Costo unit.</span><span>Cantidad</span><span></span>
+            </div>
+            <div class="purchase-items-list" id="purchase-items-list"></div>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-add-row">+ Agregar ítem</button>
+
+            <div class="extra-costs">
+              <div class="extra-costs-title">Costos adicionales</div>
+              <div class="form-row form-row-2">
+                <div class="form-group">
+                  <label>Envío (CLP)</label>
+                  <input type="number" id="purchase-shipping" placeholder="0" min="0" value="0">
+                </div>
+                <div class="form-group">
+                  <label>Aduana (CLP)</label>
+                  <input type="number" id="purchase-customs" placeholder="0" min="0" value="0">
+                </div>
+              </div>
+            </div>
+
+            <div class="purchase-total-row">
+              <span>Total compra:</span>
+              <span class="purchase-total-amount" id="purchase-running-total">$0</span>
+            </div>
+            <div id="purchase-form-error" class="field-error"></div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-secondary">Guardar compra</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Historial compras -->
+      <div class="finanzas-card">
+        <div class="finanzas-card__header"><h3>🧾 Historial de Compras</h3></div>
+        <div class="finanzas-card__body">
+          <div class="history-table-wrap" id="compras-history"></div>
+        </div>
+      </div>
+
+      <!-- Historial ventas -->
+      <div class="finanzas-card">
+        <div class="finanzas-card__header"><h3>💸 Historial de Ventas</h3></div>
+        <div class="finanzas-card__body">
+          <div class="history-table-wrap" id="ventas-history"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<!-- ── Modal overlay ── -->
+<div id="modal-overlay"></div>
+
+<!-- ── Modal: Nuevo producto (desde compra) ── -->
+<div class="modal" id="modal-add-product">
+  <div class="modal__box">
+    <div class="modal__header">
+      <span class="modal__title">Nuevo producto</span>
+      <button class="modal__close" data-close>✕</button>
+    </div>
+    <form id="form-add-product" novalidate>
+      <div class="form-group">
+        <label>Nombre del producto *</label>
+        <input type="text" id="ap-name" placeholder="Ej: Polera estampada" required>
+        <div class="field-error" id="ap-name-err">Ingresa el nombre del producto.</div>
+      </div>
+      <div style="border-top:1.5px solid var(--c-bg);margin:.75rem 0;padding-top:.75rem">
+        <p style="font-size:.82rem;font-weight:600;color:var(--c-text-soft);margin-bottom:.6rem">Color / variante <span style="font-weight:400">(opcional — si no hay variantes déjalo vacío)</span></p>
+        <div class="form-group">
+          <label>Color</label>
+          <input type="text" id="ap-color" placeholder="Ej: Negro">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Crear producto</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<input type="file" id="detail-img-file" accept="image/*" style="display:none">
+
+<!-- ── Modal: Detalle producto ── -->
+<div class="modal" id="modal-product-detail">
+  <div class="modal__box modal__box--wide">
+    <div class="modal__header">
+      <span class="modal__title" id="detail-modal-title">Detalle</span>
+      <div style="display:flex;gap:.5rem;align-items:center;">
+        <button class="btn btn-ghost btn-sm" id="btn-edit-product">✏️ Editar</button>
+        <button class="modal__close" data-close>✕</button>
+      </div>
+    </div>
+    <div id="detail-modal-body"></div>
+  </div>
+</div>
+
+<!-- ── Modal: Editar producto ── -->
+<div class="modal" id="modal-edit-product">
+  <div class="modal__box modal__box--wide">
+    <div class="modal__header">
+      <span class="modal__title">Editar producto</span>
+      <button class="modal__close" data-close>✕</button>
+    </div>
+    <form id="form-edit-product" novalidate>
+      <div id="edit-img-preview" class="detail-img-wrap" style="margin-bottom:1rem;cursor:pointer">
+        <img id="edit-img-thumb" src="" alt="">
+        <div class="detail-img-overlay">📷 Subir imagen</div>
+      </div>
+      <input type="file" id="ep-image-file" accept="image/*" style="display:none">
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" id="ep-name" required>
+          <div class="field-error" id="ep-name-err">Ingresa el nombre.</div>
+        </div>
+        <div class="form-group">
+          <label>Precio de venta (CLP)</label>
+          <input type="number" id="ep-price" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Link de compra (opcional)</label>
+        <input type="url" id="ep-source" placeholder="https://...">
+      </div>
+
+      <div style="border-top:1.5px solid var(--c-bg);margin:.75rem 0;padding-top:.75rem">
+        <p style="font-size:.82rem;font-weight:600;color:var(--c-text-soft);margin-bottom:.6rem">Colores / variantes</p>
+        <div id="edit-colors-list" class="edit-colors-list"></div>
+        <div class="add-color-form" style="margin-top:.5rem">
+          <div class="form-group"><label>Nuevo color</label>
+            <input type="text" id="ep-new-color" placeholder="Ej: Azul"></div>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-ep-add-color">+ Agregar</button>
+        </div>
+        <div class="field-error" id="ep-color-err" style="margin-top:.25rem"></div>
+      </div>
+
+      <div class="form-actions" style="justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+        <button type="button" class="btn btn-danger btn-sm" id="btn-ep-delete">🗑 Eliminar producto</button>
+        <div style="display:flex;gap:.75rem">
+          <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Modal: Editar compra ── -->
+<div class="modal" id="modal-edit-purchase">
+  <div class="modal__box modal__box--wide">
+    <div class="modal__header">
+      <span class="modal__title">Editar compra</span>
+      <button class="modal__close" data-close>✕</button>
+    </div>
+    <form id="form-edit-purchase" novalidate>
+      <div class="purchase-items-header">
+        <span>Producto</span><span>Color</span><span>Costo unit.</span><span>Cantidad</span><span></span>
+      </div>
+      <div class="purchase-items-list" id="ep-items-list"></div>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-ep-add-row">+ Agregar ítem</button>
+      <div class="extra-costs">
+        <div class="extra-costs-title">Costos adicionales</div>
+        <div class="form-row form-row-2">
+          <div class="form-group">
+            <label>Envío (CLP)</label>
+            <input type="number" id="ep-shipping" placeholder="0" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label>Aduana (CLP)</label>
+            <input type="number" id="ep-customs" placeholder="0" min="0" value="0">
+          </div>
+        </div>
+      </div>
+      <div class="purchase-total-row">
+        <span>Total compra:</span>
+        <span class="purchase-total-amount" id="ep-running-total">$0</span>
+      </div>
+      <div id="ep-form-error" class="field-error"></div>
+      <div class="form-actions" style="justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+        <button type="button" class="btn btn-danger btn-sm" id="btn-delete-purchase">🗑 Eliminar compra</button>
+        <div style="display:flex;gap:.75rem">
+          <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
+          <button type="submit" class="btn btn-secondary">Guardar cambios</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Modal: Vender ── -->
+<div class="modal" id="modal-sell">
+  <div class="modal__box">
+    <div class="modal__header">
+      <span class="modal__title">Registrar venta</span>
+      <button class="modal__close" id="sell-close">✕</button>
+    </div>
+    <div class="sell-info">
+      <div class="sell-info-block">
+        <label>Producto</label>
+        <strong id="sell-product-name">—</strong>
+      </div>
+      <div class="sell-info-block">
+        <label>Precio unit.</label>
+        <strong id="sell-price">—</strong>
+      </div>
+    </div>
+    <form id="form-sell" novalidate>
+      <div class="form-group">
+        <label>Color</label>
+        <select id="sell-color"></select>
+      </div>
+      <div id="sell-reservations" style="margin-bottom:.75rem"></div>
+      <div class="form-group">
+        <label>Cantidad</label>
+        <input type="number" id="sell-qty" value="1" min="1">
+        <div class="field-error" id="sell-qty-err"></div>
+      </div>
+      <div class="sell-subtotal" id="sell-subtotal">Total: $0</div>
+      <div class="form-group" style="margin-top:.75rem">
+        <label>Comentario <span style="font-weight:400;color:var(--c-text-soft)">(opcional)</span></label>
+        <textarea id="sell-note" rows="2" style="resize:vertical" placeholder="Ej: cliente pagó en efectivo, envío pendiente…"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" id="sell-cancel">Cancelar</button>
+        <button type="submit" class="btn btn-secondary">✓ Confirmar venta</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Modal: Reservas ── -->
+<div class="modal" id="modal-reservations">
+  <div class="modal__box" style="max-width:460px">
+    <div class="modal__header">
+      <span class="modal__title" id="reservations-title">Reservas</span>
+      <button class="modal__close" data-close>✕</button>
+    </div>
+    <div id="reservations-list" style="margin-bottom:1.25rem"></div>
+    <div style="border-top:1.5px solid var(--c-bg);padding-top:1rem">
+      <p style="font-size:.82rem;font-weight:600;color:var(--c-text-soft);margin-bottom:.6rem">Nueva reserva</p>
+      <div class="form-row form-row-2">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Nombre</label>
+          <input type="text" id="res-person" placeholder="Ej: María">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Cantidad</label>
+          <input type="number" id="res-qty" min="1" value="1" placeholder="1">
+        </div>
+      </div>
+      <div id="res-error" class="field-error" style="margin-top:.4rem"></div>
+      <div class="form-actions" style="margin-top:.75rem">
+        <button type="button" class="btn btn-primary" id="btn-res-add">Agregar reserva</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Editar venta ── -->
+<div class="modal" id="modal-edit-sale">
+  <div class="modal__box" style="max-width:420px">
+    <div class="modal__header">
+      <span class="modal__title">Editar venta</span>
+      <button class="modal__close" data-close>✕</button>
+    </div>
+    <form id="form-edit-sale" novalidate>
+      <p id="edit-sale-info" style="font-size:.85rem;color:var(--c-text-soft);margin-bottom:1rem"></p>
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="edit-sale-date">
+        </div>
+        <div class="form-group">
+          <label>Cantidad</label>
+          <input type="number" id="edit-sale-qty" min="1">
+          <div class="field-error" id="edit-sale-qty-err"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Precio unitario (CLP)</label>
+        <input type="number" id="edit-sale-price" min="0">
+      </div>
+      <div class="sell-subtotal" id="edit-sale-total">Total: $0</div>
+      <div class="form-group" style="margin-top:.75rem">
+        <label>Comentario <span style="font-weight:400;color:var(--c-text-soft)">(opcional)</span></label>
+        <textarea id="edit-sale-note" rows="2" style="resize:vertical"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
+        <button type="submit" class="btn btn-secondary">✓ Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Modal: Confirmar ── -->
+<div class="modal" id="modal-confirm">
+  <div class="modal__box" style="max-width:380px">
+    <div class="modal__header" style="margin-bottom:.75rem">
+      <span class="modal__title" id="confirm-title">Confirmar</span>
+    </div>
+    <p id="confirm-message" style="font-size:.92rem;line-height:1.55;margin-bottom:1.5rem;color:var(--c-text)"></p>
+    <div class="form-actions">
+      <button type="button" class="btn btn-ghost" id="confirm-cancel">Cancelar</button>
+      <button type="button" class="btn btn-danger" id="confirm-ok">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Prompt ── -->
+<div class="modal" id="modal-prompt">
+  <div class="modal__box" style="max-width:380px">
+    <div class="modal__header" style="margin-bottom:.75rem">
+      <span class="modal__title" id="prompt-title">Ingresar</span>
+    </div>
+    <div class="form-group" style="margin-bottom:1.25rem">
+      <label id="prompt-label"></label>
+      <input id="prompt-input" type="text">
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-ghost" id="prompt-cancel">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="prompt-ok">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div id="toast"></div>
+
+<script>
+/* ================================================================
+   stimmilab — store management app
+   ================================================================ */
+
+const KEYS = {
+  products:  'stimmi_products',
+  purchases: 'stimmi_purchases',
+  sales:     'stimmi_sales',
+};
+
+/* ── Storage helpers ── */
+let _mem = { stimmi_products: [], stimmi_purchases: [], stimmi_sales: [] };
+let storageOK = true;
+let _cloudOK = false;
+try { localStorage.setItem('__test__', '1'); localStorage.removeItem('__test__'); }
+catch(e) { storageOK = false; }
+
+function load(key) {
+  return _mem[key] ? JSON.parse(JSON.stringify(_mem[key])) : [];
+}
+function save(key, arr) {
+  _mem[key] = arr;
+  if (storageOK) {
+    try { localStorage.setItem(key, JSON.stringify(arr)); } catch(e) {}
+  }
+  if (_cloudOK) {
+    fetch('/api/data', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, value: arr }),
+    }).catch(() => {});
+  }
+}
+
+async function initCloudData() {
+  try {
+    const [products, purchases, sales] = await Promise.all([
+      fetch('/api/data?key=' + KEYS.products).then(r => r.ok ? r.json() : null),
+      fetch('/api/data?key=' + KEYS.purchases).then(r => r.ok ? r.json() : null),
+      fetch('/api/data?key=' + KEYS.sales).then(r => r.ok ? r.json() : null),
+    ]);
+    if (products === null) throw new Error('API unavailable');
+    _cloudOK = true;
+
+    const cloudEmpty = !products.length && !purchases.length && !sales.length;
+    if (cloudEmpty && storageOK) {
+      // Auto-migrate localStorage → Neon on first use
+      const lsP  = JSON.parse(localStorage.getItem(KEYS.products)  || '[]');
+      const lsPu = JSON.parse(localStorage.getItem(KEYS.purchases) || '[]');
+      const lsS  = JSON.parse(localStorage.getItem(KEYS.sales)     || '[]');
+      const hasLocal = lsP.length || lsPu.length || lsS.length;
+      if (hasLocal) {
+        _mem[KEYS.products]  = lsP;
+        _mem[KEYS.purchases] = lsPu;
+        _mem[KEYS.sales]     = lsS;
+        await Promise.all([
+          fetch('/api/data', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: KEYS.products,  value: lsP  }) }),
+          fetch('/api/data', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: KEYS.purchases, value: lsPu }) }),
+          fetch('/api/data', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: KEYS.sales,     value: lsS  }) }),
+        ]);
+        showToast('Datos migrados a la nube ✓');
+        return;
+      }
+    }
+    _mem[KEYS.products]  = products;
+    _mem[KEYS.purchases] = purchases;
+    _mem[KEYS.sales]     = sales;
+  } catch(e) {
+    // Cloud unavailable — fall back to localStorage
+    if (storageOK) {
+      _mem[KEYS.products]  = JSON.parse(localStorage.getItem(KEYS.products)  || '[]');
+      _mem[KEYS.purchases] = JSON.parse(localStorage.getItem(KEYS.purchases) || '[]');
+      _mem[KEYS.sales]     = JSON.parse(localStorage.getItem(KEYS.sales)     || '[]');
+    }
+    console.warn('Cloud unavailable, using localStorage:', e.message);
+  }
+}
+
+function clearAllData() {
+  showConfirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.', () => {
+    [KEYS.products, KEYS.purchases, KEYS.sales].forEach(k => {
+      if (storageOK) localStorage.removeItem(k);
+      else _mem[k] = [];
+    });
+    renderProductGrid();
+    renderTransitTab();
+    renderComprasHistory();
+    renderVentasHistory();
+    renderBalance();
+    resetPurchaseForm();
+    showToast('Datos eliminados');
+  }, { title: 'Borrar datos', okLabel: 'Sí, borrar todo' });
+}
+
+/* ── ID generator ── */
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+/* ── Data: Products ── */
+function getProducts()     { return load(KEYS.products); }
+function saveProducts(arr) { save(KEYS.products, arr); }
+function getProductById(id){ return getProducts().find(p => p.id === id); }
+
+function addProduct({ name, imageUrl, price, firstColor, sourceUrl }) {
+  const p = {
+    id: genId(), name, imageUrl: imageUrl || '',
+    price: parseFloat(price) || 0,
+    sourceUrl: sourceUrl || '',
+    colors: [{ name: firstColor?.trim() || 'Única', total: 0, reserved: 0, sold: 0 }]
+  };
+  const arr = getProducts();
+  arr.push(p);
+  saveProducts(arr);
+  return p;
+}
+
+function updateProductImage(productId, url) {
+  const arr = getProducts();
+  const p = arr.find(p => p.id === productId);
+  if (p) { p.imageUrl = url; saveProducts(arr); }
+}
+
+function updateProduct(productId, { name, price, imageUrl, sourceUrl, colorTotals }) {
+  const arr = getProducts();
+  const p = arr.find(p => p.id === productId);
+  if (!p) return;
+  p.name      = name;
+  p.price     = parseFloat(price) || 0;
+  p.imageUrl  = imageUrl  || '';
+  p.sourceUrl = sourceUrl || '';
+  if (colorTotals) {
+    colorTotals.forEach(({ colorName, total }) => {
+      const c = p.colors.find(c => c.name === colorName);
+      if (c) c.total = total;
+    });
+  }
+  saveProducts(arr);
+}
+
+function deleteProduct(productId) {
+  saveProducts(getProducts().filter(p => p.id !== productId));
+}
+
+function addColorToProduct(productId, colorName, stock) {
+  const arr = getProducts();
+  const p = arr.find(p => p.id === productId);
+  if (!p) return false;
+  if (p.colors.some(c => c.name.toLowerCase() === colorName.toLowerCase())) return false;
+  // Remove "Única" placeholder if it has no stock/sales yet
+  if (p.colors.length === 1 && p.colors[0].name === 'Única' &&
+      p.colors[0].total === 0 && p.colors[0].sold === 0 && colorReservedCount(p.colors[0]) === 0) {
+    p.colors = [];
+  }
+  p.colors.push({ name: colorName, total: parseInt(stock) || 0, reserved: 0, sold: 0 });
+  saveProducts(arr);
+  return true;
+}
+
+function updateReserved(productId, colorName, value) {
+  const arr = getProducts();
+  const p = arr.find(p => p.id === productId);
+  if (!p) return;
+  const c = p.colors.find(c => c.name === colorName);
+  if (c) { c.reserved = Math.max(0, parseInt(value) || 0); saveProducts(arr); }
+}
+
+function updateColorStock(productId, colorName, value) {
+  const arr = getProducts();
+  const p = arr.find(p => p.id === productId);
+  if (!p) return;
+  const c = p.colors.find(c => c.name === colorName);
+  if (c) { c.total = Math.max(0, parseInt(value) || 0); saveProducts(arr); }
+}
+
+function recordSale(productId, colorName, quantity, note = '') {
+  const arr = getProducts();
+  const p = arr.find(p => p.id === productId);
+  if (!p) return null;
+  const c = p.colors.find(c => c.name === colorName);
+  if (!c) return null;
+  c.sold += quantity;
+  saveProducts(arr);
+  const sale = {
+    id: genId(), date: new Date().toISOString(),
+    productId, productName: p.name, color: colorName,
+    quantity, pricePerUnit: p.price, total: quantity * p.price,
+    note: note.trim(),
+  };
+  const sales = getSales();
+  sales.push(sale);
+  saveSales(sales);
+  return sale;
+}
+
+function deleteSale(saleId) {
+  const sales = getSales();
+  const idx = sales.findIndex(s => s.id === saleId);
+  if (idx === -1) return;
+  const sale = sales[idx];
+  const products = getProducts();
+  const p = products.find(p => p.id === sale.productId);
+  if (p) {
+    const c = p.colors.find(c => c.name === sale.color);
+    if (c) c.sold = Math.max(0, c.sold - sale.quantity);
+    saveProducts(products);
+  }
+  sales.splice(idx, 1);
+  saveSales(sales);
+}
+
+function updateSale(saleId, { quantity, pricePerUnit, date, note }) {
+  const sales = getSales();
+  const sale = sales.find(s => s.id === saleId);
+  if (!sale) return;
+  const diff = quantity - sale.quantity;
+  if (diff !== 0) {
+    const products = getProducts();
+    const p = products.find(p => p.id === sale.productId);
+    if (p) {
+      const c = p.colors.find(c => c.name === sale.color);
+      if (c) c.sold = Math.max(0, c.sold + diff);
+      saveProducts(products);
+    }
+  }
+  sale.quantity     = quantity;
+  sale.pricePerUnit = pricePerUnit;
+  sale.total        = quantity * pricePerUnit;
+  sale.date         = date;
+  sale.note         = (note || '').trim();
+  saveSales(sales);
+}
+
+/* ── Data: Purchases ── */
+function getPurchases()     { return load(KEYS.purchases); }
+function savePurchases(arr) { save(KEYS.purchases, arr); }
+
+function addPurchase({ items, shipping, customs }) {
+  // Stock is NOT added yet — purchase starts in transit
+  const itemsTotal = items.reduce((s, i) => s + i.unitCost * i.quantity, 0);
+  const total = itemsTotal + (shipping || 0) + (customs || 0);
+  const purchase = {
+    id: genId(), date: new Date().toISOString(),
+    items, shipping: shipping || 0, customs: customs || 0, total,
+    status: 'transit',
+  };
+  const purchases = getPurchases();
+  purchases.push(purchase);
+  savePurchases(purchases);
+  return purchase;
+}
+
+function receivePurchase(purchaseId) {
+  const purchases = getPurchases();
+  const p = purchases.find(p => p.id === purchaseId);
+  if (!p || p.status === 'received') return;
+  const arr = getProducts();
+  p.items.forEach(item => {
+    const prod = arr.find(pr => pr.id === item.productId);
+    if (!prod) return;
+    const color = prod.colors.find(c => c.name === item.colorName);
+    if (color) color.total += item.quantity;
+  });
+  saveProducts(arr);
+  p.status = 'received';
+  savePurchases(purchases);
+}
+
+function deletePurchase(purchaseId) {
+  const purchases = getPurchases();
+  const p = purchases.find(p => p.id === purchaseId);
+  if (!p) return;
+  // If already received, reverse the stock that was added
+  if ((p.status || 'received') === 'received') {
+    const arr = getProducts();
+    p.items.forEach(item => {
+      const prod = arr.find(pr => pr.id === item.productId);
+      if (!prod) return;
+      const color = prod.colors.find(c => c.name === item.colorName);
+      if (color) color.total = Math.max(0, color.total - item.quantity);
+    });
+    saveProducts(arr);
+  }
+  savePurchases(purchases.filter(p => p.id !== purchaseId));
+}
+
+/* ── Data: Sales ── */
+function getSales()     { return load(KEYS.sales); }
+function saveSales(arr) { save(KEYS.sales, arr); }
+
+/* ── Computed helpers ── */
+function colorReservedCount(c) {
+  if (Array.isArray(c.reservations) && c.reservations.length)
+    return c.reservations.reduce((s, r) => s + (r.quantity || 0), 0);
+  return c.reserved || 0;
+}
+function colorAvailable(c)       { return Math.max(0, c.total - colorReservedCount(c) - c.sold); }
+function _refreshedReservationOpts(productId, colorName) {
+  const opts = window._reservationOpts || {};
+  if (opts.maxQty === undefined) return opts; // inventory context, no recalc needed
+  const transitTotal = transitQtyForColor(productId, colorName);
+  const p     = getProductById(productId);
+  const color = p?.colors.find(c => c.name === colorName);
+  const maxQty = Math.max(0, transitTotal - (color ? colorReservedCount(color) : 0));
+  return { ...opts, maxQty, transitTotal };
+}
+
+function transitQtyForColor(productId, colorName) {
+  return getPurchases()
+    .filter(p => (p.status || 'received') === 'transit')
+    .flatMap(p => p.items)
+    .filter(i => i.productId === productId && i.colorName === colorName)
+    .reduce((s, i) => s + i.quantity, 0);
+}
+function productAvailable(p)     { return p.colors.reduce((s, c) => s + colorAvailable(c), 0); }
+function productTotalReserved(p) { return p.colors.reduce((s, c) => s + colorReservedCount(c), 0); }
+
+function addReservation(productId, colorName, personName, quantity) {
+  const arr = getProducts();
+  const p = arr.find(p => p.id === productId);
+  if (!p) return;
+  const c = p.colors.find(c => c.name === colorName);
+  if (!c) return;
+  if (!Array.isArray(c.reservations)) c.reservations = [];
+  c.reservations.push({ id: genId(), personName, quantity: parseInt(quantity) || 1, date: new Date().toISOString() });
+  c.reserved = colorReservedCount(c);
+  saveProducts(arr);
+}
+
+function removeReservation(productId, colorName, reservationId) {
+  const arr = getProducts();
+  const p = arr.find(p => p.id === productId);
+  if (!p) return;
+  const c = p.colors.find(c => c.name === colorName);
+  if (!c || !Array.isArray(c.reservations)) return;
+  c.reservations = c.reservations.filter(r => r.id !== reservationId);
+  c.reserved = colorReservedCount(c);
+  saveProducts(arr);
+}
+function productTotalSold(p)     { return p.colors.reduce((s, c) => s + (c.sold || 0), 0); }
+function totalSpent()            { return getPurchases().reduce((s, p) => s + p.total, 0); }
+function totalEarned()           { return getSales().reduce((s, s2) => s + s2.total, 0); }
+
+/* ── Formatters ── */
+const fmt = n => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
+const fmtDate = iso => new Date(iso).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+/* ── Placeholder SVG ── */
+const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150' viewBox='0 0 200 150'%3E%3Crect width='200' height='150' fill='%23f0eafa'/%3E%3Ctext x='100' y='80' text-anchor='middle' fill='%23c9b8e8' font-size='40'%3E🌸%3C/text%3E%3C/svg%3E`;
+
+/* ================================================================
+   RENDER FUNCTIONS
+   ================================================================ */
+
+function renderProductGrid() {
+  const products = getProducts();
+  const grid  = document.getElementById('product-grid');
+  const empty = document.getElementById('empty-inventory');
+  if (!products.length) {
+    grid.style.display = 'none'; empty.style.display = 'block'; return;
+  }
+  grid.style.display = ''; empty.style.display = 'none';
+  grid.innerHTML = products.map(p => {
+    const avail    = productAvailable(p);
+    const reserved = productTotalReserved(p);
+    const sold     = productTotalSold(p);
+    const img      = p.imageUrl || PLACEHOLDER;
+    return `<div class="product-card" data-id="${p.id}">
+      <img class="product-card__img" src="${img}" alt="${p.name}" onerror="this.src='${PLACEHOLDER}'">
+      <div class="product-card__body">
+        <div class="product-card__name" title="${p.name}">${p.name}</div>
+        <div class="product-card__stats">
+          <div class="stat"><label>En inventario</label><strong>${avail}</strong></div>
+          <div class="stat"><label>Reservados</label><strong>${reserved}</strong></div>
+          <div class="stat"><label>Vendidos</label><strong>${sold}</strong></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderProductDetail(productId) {
+  const p = getProductById(productId);
+  if (!p) return;
+  document.getElementById('detail-modal-title').textContent = p.name;
+  const img      = p.imageUrl || PLACEHOLDER;
+  const hasStock = p.colors.some(c => colorAvailable(c) > 0);
+  const rows = p.colors.map(c => {
+    const avail    = colorAvailable(c);
+    const badgeCls = avail === 0 ? 'badge-available badge-zero' : 'badge-available';
+    return `<tr>
+      <td><strong>${c.name}</strong></td>
+      <td style="text-align:center;font-weight:600">${c.total - c.sold}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" data-open-reservations="${c.name}" data-pid="${p.id}"
+          style="min-width:64px">
+          ${colorReservedCount(c) > 0 ? colorReservedCount(c) + ' reserva' + (colorReservedCount(c) > 1 ? 's' : '') : '+ Agregar'}
+        </button>
+      </td>
+      <td><span class="${badgeCls}">${avail}</span></td>
+      <td><button class="btn-icon" data-delete-color="${c.name}" data-pid="${p.id}" title="Eliminar color">✕</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('detail-modal-body').innerHTML = `
+    <div class="detail-img-wrap" id="detail-img-wrap">
+      <img src="${img}" alt="${p.name}" onerror="this.src='${PLACEHOLDER}'">
+      <div class="detail-img-overlay">📷 Cambiar imagen</div>
+    </div>
+    <div class="detail-meta">
+      <span class="detail-name">${p.name}</span>
+      <span class="detail-price">${p.price > 0 ? fmt(p.price) + ' / unidad' : 'Sin precio aún'}</span>
+      ${p.sourceUrl ? `<a href="${p.sourceUrl}" target="_blank" rel="noopener" style="font-size:.82rem;color:var(--c-text-soft);text-decoration:none;border-bottom:1px dashed var(--c-text-soft)">🔗 Ver compra</a>` : ''}
+    </div>
+    <div class="color-table-wrap">
+      <table>
+        <thead><tr><th>Color</th><th>En inventario</th><th>Reservados</th><th>Disponibles</th><th></th></tr></thead>
+        <tbody id="color-tbody">${rows}</tbody>
+      </table>
+    </div>
+    <div class="add-color-form">
+      <div class="form-group"><label>Color</label>
+        <input type="text" id="new-color-name" placeholder="Ej: Rojo"></div>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-add-color">+ Agregar</button>
+    </div>
+    <div id="add-color-error" class="field-error"></div>
+    <div class="form-actions" style="flex-direction:column;align-items:stretch;gap:.4rem">
+      <button type="button" class="btn btn-secondary" id="btn-open-sell" ${(!hasStock || !p.price) ? 'disabled' : ''}>
+        💸 Vender
+      </button>
+      ${!p.price ? `<p style="font-size:.78rem;color:var(--c-text-soft);text-align:center;margin:0">Agrega el precio de venta usando el botón <strong>✏️ Editar</strong>.</p>` : ''}
+    </div>`;
+  document.getElementById('detail-img-wrap').addEventListener('click', () => {
+    const fi = document.getElementById('detail-img-file');
+    fi.value = '';
+    fi.onchange = () => {
+      const file = fi.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        updateProductImage(p.id, ev.target.result);
+        renderProductDetail(p.id);
+        renderProductGrid();
+      };
+      reader.readAsDataURL(file);
+    };
+    fi.click();
+  });
+  document.getElementById('btn-open-sell').addEventListener('click', () => {
+    renderSellModal(getProductById(productId));
+    openModal('modal-sell');
+  });
+  document.getElementById('btn-add-color').addEventListener('click', () => {
+    const name  = document.getElementById('new-color-name').value.trim();
+    const errEl = document.getElementById('add-color-error');
+    if (!name) { errEl.textContent = 'Ingresa el nombre del color.'; errEl.classList.add('show'); return; }
+    const ok = addColorToProduct(p.id, name, 0);
+    if (ok === false) { errEl.textContent = 'Ese color ya existe.'; errEl.classList.add('show'); return; }
+    errEl.classList.remove('show');
+    renderProductDetail(p.id); renderProductGrid();
+    // Refresh color selects in purchase form for this product
+    refreshColorSelectsForProduct(p.id);
+  });
+}
+
+function renderEditModal(productId) {
+  const p = getProductById(productId);
+  if (!p) return;
+  const thumb = document.getElementById('edit-img-thumb');
+  thumb.src = p.imageUrl || PLACEHOLDER;
+  thumb.onerror = () => { thumb.src = PLACEHOLDER; };
+  window._epImageB64 = p.imageUrl || '';
+  document.getElementById('ep-name').value   = p.name;
+  document.getElementById('ep-price').value  = p.price || '';
+  document.getElementById('ep-source').value = p.sourceUrl || '';
+  document.getElementById('ep-new-color').value = '';
+  document.getElementById('ep-color-err').classList.remove('show');
+  document.getElementById('ep-name-err').classList.remove('show');
+  renderEditColorList(productId);
+
+  // File upload for image
+  const fileInput = document.getElementById('ep-image-file');
+  fileInput.value = '';
+  fileInput.onchange = () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      window._epImageB64 = ev.target.result;
+      thumb.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+  document.getElementById('edit-img-preview').onclick = () => fileInput.click();
+}
+
+function renderEditColorList(productId) {
+  const p = getProductById(productId);
+  if (!p) return;
+  const list = document.getElementById('edit-colors-list');
+  if (!p.colors.length) { list.innerHTML = '<p style="font-size:.82rem;color:var(--c-text-soft)">Sin colores.</p>'; return; }
+  const totalStock = p.colors.reduce((s, c) => s + c.total, 0);
+  list.innerHTML = p.colors.map(c => `
+    <div class="edit-color-row" data-color-name="${c.name}">
+      <span style="min-width:80px">${c.name}</span>
+      <div style="display:flex;align-items:center;gap:.35rem;flex:1">
+        <label style="font-size:.75rem;color:var(--c-text-soft);white-space:nowrap">Stock:</label>
+        <input type="number" class="inline-edit edit-color-stock" min="0" value="${c.total}" style="width:60px" data-sold="${c.sold}">
+      </div>
+      <small style="color:var(--c-text-soft);font-size:.75rem;white-space:nowrap">${c.sold} vendidas</small>
+      <button type="button" class="btn-icon" data-ep-delete-color="${c.name}" data-pid="${productId}" title="Quitar color">✕</button>
+    </div>`).join('') +
+    `<div id="edit-stock-balance" style="font-size:.8rem;padding:.5rem .25rem;display:flex;gap:.4rem;align-items:center">
+      <span style="color:var(--c-text-soft)">Total a distribuir:</span>
+      <strong id="edit-stock-distributed">0</strong>
+      <span style="color:var(--c-text-soft)">/ ${totalStock}</span>
+      <span id="edit-stock-badge" style="font-size:.75rem;padding:.1rem .5rem;border-radius:20px"></span>
+    </div>`;
+  updateEditStockBalance(totalStock);
+  list.querySelectorAll('.edit-color-stock').forEach(input => {
+    input.addEventListener('input', () => updateEditStockBalance(totalStock));
+  });
+}
+
+function updateEditStockBalance(totalStock) {
+  const inputs = document.querySelectorAll('#edit-colors-list .edit-color-stock');
+  const distributed = Array.from(inputs).reduce((s, i) => s + (parseInt(i.value) || 0), 0);
+  const distEl  = document.getElementById('edit-stock-distributed');
+  const badge   = document.getElementById('edit-stock-badge');
+  if (!distEl) return;
+  distEl.textContent = distributed;
+  if (distributed === totalStock) {
+    badge.textContent = '✓ OK';
+    badge.style.background = 'rgba(92,184,138,.15)';
+    badge.style.color = 'var(--c-positive)';
+  } else {
+    const diff = distributed - totalStock;
+    badge.textContent = diff > 0 ? `+${diff} de más` : `${diff} faltante`;
+    badge.style.background = 'rgba(217,107,122,.12)';
+    badge.style.color = 'var(--c-negative)';
+  }
+}
+
+function renderReservationsModal(productId, colorName, opts = {}) {
+  window._reservationProductId = productId;
+  window._reservationColorName = colorName;
+  window._reservationOpts      = opts;
+  // maxQty limits how many units can be reserved (transit context); null = use colorAvailable
+  window._reservationMax = (opts.maxQty !== undefined) ? opts.maxQty : null;
+  const p = getProductById(productId);
+  const c = p?.colors.find(c => c.name === colorName);
+  if (!c) return;
+  document.getElementById('reservations-title').textContent = `Reservas — ${colorName}`;
+  document.getElementById('res-person').value = '';
+  document.getElementById('res-qty').value    = '1';
+  document.getElementById('res-error').classList.remove('show');
+  const reservations = Array.isArray(c.reservations) ? c.reservations : [];
+  const list  = document.getElementById('reservations-list');
+  if (!reservations.length) {
+    list.innerHTML = '<div class="reservations-empty">Sin reservas aún.</div>';
+  } else {
+    list.innerHTML = reservations.map(r => `
+      <div class="reservation-row">
+        <span class="res-name">${r.personName}</span>
+        <span class="res-qty">${r.quantity} ud${r.quantity > 1 ? 's' : ''}</span>
+        <span class="res-date">${fmtDate(r.date)}</span>
+        <button class="btn-icon" data-cancel-res="${r.id}" title="Cancelar reserva">✕</button>
+      </div>`).join('');
+  }
+  // Hint: transit context shows transit remaining; inventory shows available
+  const hint = document.createElement('p');
+  hint.style.cssText = 'font-size:.78rem;color:var(--c-text-soft);margin-bottom:.5rem;text-align:right';
+  if (window._reservationMax !== null) {
+    hint.textContent = `En tránsito: ${opts.transitTotal} · Disponibles para reservar: ${window._reservationMax}`;
+  } else {
+    hint.textContent = `Disponibles en inventario: ${colorAvailable(c)}`;
+  }
+  list.prepend(hint);
+}
+
+function renderSellModal(p) {
+  if (!p) return;
+  document.getElementById('sell-product-name').textContent = p.name;
+  document.getElementById('sell-price').textContent = fmt(p.price);
+  document.getElementById('sell-qty').value = 1;
+  document.getElementById('sell-note').value = '';
+  document.getElementById('sell-qty-err').classList.remove('show');
+  const sellableColors = p.colors.filter(c => colorAvailable(c) > 0 || colorReservedCount(c) > 0);
+  const sel = document.getElementById('sell-color');
+  sel.innerHTML = sellableColors.length
+    ? sellableColors.map(c => {
+        const avail = colorAvailable(c);
+        const res   = colorReservedCount(c);
+        let label = c.name;
+        if (avail > 0 && res > 0) label += ` (${avail} disp. + ${res} reserv.)`;
+        else if (avail > 0)       label += ` (${avail} disp.)`;
+        else                      label += ` (${res} reserv.)`;
+        return `<option value="${c.name}">${label}</option>`;
+      }).join('')
+    : '<option value="">Sin stock disponible</option>';
+  document.querySelector('#form-sell button[type=submit]').disabled = !sellableColors.length;
+  window._sellReservationId = null;
+  renderSellReservations();
+  updateSellSubtotal(p.price);
+}
+
+function renderSellReservations() {
+  const p = getProductById(window._currentProductId);
+  const colorName = document.getElementById('sell-color').value;
+  const container = document.getElementById('sell-reservations');
+  if (!container) return;
+  if (!p || !colorName) { container.innerHTML = ''; return; }
+  const color = p.colors.find(c => c.name === colorName);
+  const reservations = (color && Array.isArray(color.reservations)) ? color.reservations : [];
+  if (!reservations.length) { container.innerHTML = ''; return; }
+  container.innerHTML = `
+    <p style="font-size:.78rem;font-weight:600;color:var(--c-text-soft);margin-bottom:.4rem">Reservas para este color — selecciona para vender a reservante</p>
+    <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+      ${reservations.map(r => `
+        <button type="button" class="sell-res-chip${window._sellReservationId === r.id ? ' active' : ''}"
+          data-res-id="${r.id}" data-res-qty="${r.quantity}">
+          ${r.personName} — ${r.quantity} ud${r.quantity !== 1 ? 's' : ''}
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function updateSellSubtotal(pricePerUnit) {
+  const qty = parseInt(document.getElementById('sell-qty').value) || 0;
+  document.getElementById('sell-subtotal').textContent = `Total: ${fmt(qty * pricePerUnit)}`;
+}
+
+function renderComprasHistory() {
+  const purchases = getPurchases().slice().reverse();
+  const el = document.getElementById('compras-history');
+  if (!purchases.length) { el.innerHTML = '<div class="history-empty">Sin compras registradas aún.</div>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Fecha</th><th>Estado</th><th>Ítems</th><th>Extras</th><th>Total</th><th></th></tr></thead>
+    <tbody>${purchases.map(p => {
+      const status   = p.status || 'received';
+      const isTransit = status === 'transit';
+      const extras = [];
+      if (p.shipping > 0) extras.push(`Envío ${fmt(p.shipping)}`);
+      if (p.customs  > 0) extras.push(`Aduana ${fmt(p.customs)}`);
+      const itemsSummary = p.items.map(i => `${i.productName} (${i.colorName}) ×${i.quantity}`).join('<br>');
+      const statusBadge  = isTransit
+        ? `<span class="badge-transit">🚚 En tránsito</span>`
+        : `<span class="badge-received">✓ Recibido</span>`;
+      return `<tr>
+        <td style="white-space:nowrap">${fmtDate(p.date)}</td>
+        <td>${statusBadge}</td>
+        <td style="font-size:.82rem">${itemsSummary}</td>
+        <td style="font-size:.82rem;color:var(--c-text-soft)">${extras.join('<br>') || '—'}</td>
+        <td style="font-weight:700;white-space:nowrap">${fmt(p.total)}</td>
+        <td style="white-space:nowrap">
+          ${isTransit ? `<button class="btn btn-secondary btn-sm" data-receive-purchase="${p.id}" style="margin-bottom:.25rem;display:block">✓ Recibido</button>` : ''}
+          <button class="btn btn-ghost btn-sm" data-edit-purchase="${p.id}">✏️</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function renderVentasHistory() {
+  const sales = getSales().slice().reverse();
+  const el = document.getElementById('ventas-history');
+  if (!sales.length) { el.innerHTML = '<div class="history-empty">Sin ventas registradas aún.</div>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Fecha</th><th>Producto</th><th>Color</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead>
+    <tbody>${sales.map(s => `<tr>
+      <td style="white-space:nowrap">${fmtDate(s.date)}</td>
+      <td>${s.productName}${s.note ? `<br><span style="font-size:.76rem;color:var(--c-text-soft);font-style:italic">${s.note}</span>` : ''}</td>
+      <td>${s.color}</td>
+      <td style="text-align:center">${s.quantity}</td>
+      <td>${fmt(s.pricePerUnit)}</td>
+      <td style="font-weight:700">${fmt(s.total)}</td>
+      <td style="white-space:nowrap">
+        <button class="btn-icon" data-edit-sale="${s.id}" title="Editar">✏️</button>
+        <button class="btn-icon" data-delete-sale="${s.id}" title="Eliminar" style="color:#e06c75">✕</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function renderEditSaleModal(saleId) {
+  const sale = getSales().find(s => s.id === saleId);
+  if (!sale) return;
+  window._editSaleId = saleId;
+  document.getElementById('edit-sale-info').textContent = `${sale.productName} — ${sale.color}`;
+  document.getElementById('edit-sale-date').value  = sale.date.slice(0, 10);
+  document.getElementById('edit-sale-qty').value   = sale.quantity;
+  document.getElementById('edit-sale-price').value = sale.pricePerUnit;
+  document.getElementById('edit-sale-note').value  = sale.note || '';
+  document.getElementById('edit-sale-qty-err').classList.remove('show');
+  updateEditSaleTotal();
+}
+
+function updateEditSaleTotal() {
+  const qty   = parseInt(document.getElementById('edit-sale-qty').value)   || 0;
+  const price = parseInt(document.getElementById('edit-sale-price').value) || 0;
+  document.getElementById('edit-sale-total').textContent = `Total: ${fmt(qty * price)}`;
+}
+
+function renderTransitTab() {
+  const purchases = getPurchases().filter(p => (p.status || 'received') === 'transit');
+  const grid  = document.getElementById('transit-grid');
+  const empty = document.getElementById('empty-transit');
+  if (!purchases.length) {
+    grid.innerHTML  = '';
+    grid.style.display  = 'none';
+    empty.style.display = '';
+    updateTransitBadge(0);
+    return;
+  }
+
+  // Aggregate transit items by productId → colorName → quantity
+  const byProduct = {};
+  purchases.forEach(purchase => {
+    purchase.items.forEach(item => {
+      if (!byProduct[item.productId]) byProduct[item.productId] = { productId: item.productId, productName: item.productName, colors: {} };
+      byProduct[item.productId].colors[item.colorName] = (byProduct[item.productId].colors[item.colorName] || 0) + item.quantity;
+    });
+  });
+
+  const products = getProducts();
+  const cards = Object.values(byProduct).map(entry => {
+    const prod = products.find(p => p.id === entry.productId);
+    const img  = (prod && prod.imageUrl) ? prod.imageUrl : PLACEHOLDER;
+    const colorRows = Object.entries(entry.colors).map(([colorName, qty]) => {
+      const color = prod && prod.colors.find(c => c.name === colorName);
+      const reserved = color ? colorReservedCount(color) : 0;
+      return `<div class="transit-color-row">
+        <div class="transit-color-info">
+          <strong>${colorName}</strong>
+          <span>${qty} en camino${reserved > 0 ? ` · ${reserved} reservada${reserved !== 1 ? 's' : ''}` : ''}</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" data-transit-reserve="${entry.productId}" data-transit-color="${colorName}">+ Reservar</button>
+      </div>`;
+    }).join('');
+    return `<div class="product-card">
+      <div class="product-card__img">
+        <img src="${img}" alt="${entry.productName}" onerror="this.src='${PLACEHOLDER}'">
+      </div>
+      <div class="product-card__body transit-card">
+        <div class="transit-card__name">${entry.productName}</div>
+        ${colorRows}
+      </div>
+    </div>`;
+  }).join('');
+
+  grid.innerHTML  = cards;
+  grid.style.display  = '';
+  empty.style.display = 'none';
+  updateTransitBadge(Object.keys(byProduct).length);
+}
+
+function updateTransitBadge(count) {
+  const btn = document.getElementById('nav-transito');
+  if (!btn) return;
+  btn.textContent = count > 0 ? `🚚 En tránsito (${count})` : '🚚 En tránsito';
+}
+
+function renderBalance() {
+  const spent  = totalSpent();
+  const earned = totalEarned();
+  const net    = earned - spent;
+  document.getElementById('bal-spent').textContent  = fmt(spent);
+  document.getElementById('bal-earned').textContent = fmt(earned);
+  document.getElementById('bal-net').textContent    = fmt(net);
+  const block = document.getElementById('bal-net-block');
+  block.classList.toggle('positive', net > 0);
+  block.classList.toggle('negative', net < 0);
+}
+
+/* ================================================================
+   PURCHASE FORM
+   ================================================================ */
+
+function buildProductOptions() {
+  const products = getProducts();
+  return products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+}
+
+function updateColorSelectForRow(row, productId) {
+  const colorSel = row.querySelector('.pi-color');
+  if (!productId) {
+    colorSel.innerHTML = '<option value="">— Color —</option>';
+    colorSel.disabled = true;
+    return;
+  }
+  const p = getProductById(productId);
+  if (!p) { colorSel.disabled = true; return; }
+  colorSel.disabled = false;
+  colorSel.innerHTML =
+    '<option value="">— Color —</option>' +
+    p.colors.map(c => `<option value="${c.name}">${c.name}</option>`).join('') +
+    '<option value="__new_color__">+ Nuevo color...</option>';
+}
+
+function refreshPurchaseProductSelects() {
+  const opts = buildProductOptions();
+  document.querySelectorAll('.pi-product').forEach(sel => {
+    const cur = sel.value;
+    sel.innerHTML =
+      '<option value="">— Seleccionar producto —</option>' +
+      opts +
+      '<option value="__new__">+ Nuevo producto...</option>';
+    if (cur && cur !== '__new__') sel.value = cur;
+  });
+}
+
+function refreshColorSelectsForProduct(productId) {
+  document.querySelectorAll('.purchase-item-row').forEach(row => {
+    const prodSel = row.querySelector('.pi-product');
+    if (prodSel && prodSel.value === productId) updateColorSelectForRow(row, productId);
+  });
+}
+
+function addPurchaseItemRow() {
+  const list  = document.getElementById('purchase-items-list');
+  const rowId = genId();
+  const row   = document.createElement('div');
+  row.className    = 'purchase-item-row';
+  row.dataset.rowId = rowId;
+  row.innerHTML = `
+    <select class="pi-product">
+      <option value="">— Seleccionar producto —</option>
+      ${buildProductOptions()}
+      <option value="__new__">+ Nuevo producto...</option>
+    </select>
+    <select class="pi-color" disabled>
+      <option value="">— Color —</option>
+    </select>
+    <input type="number" class="pi-price" placeholder="Costo unit." min="0" step="1">
+    <input type="number" class="pi-qty"   placeholder="Cant." min="1" value="1">
+    <button type="button" class="btn-icon pi-remove" title="Eliminar fila">✕</button>`;
+
+  row.querySelector('.pi-product').addEventListener('change', function() {
+    if (this.value === '__new__') {
+      window._pendingNewProductRow = rowId;
+      document.getElementById('form-add-product').reset();
+      document.querySelectorAll('#modal-add-product .field-error').forEach(el => el.classList.remove('show'));
+      this.value = '';
+      openModal('modal-add-product');
+      return;
+    }
+    updateColorSelectForRow(row, this.value);
+    renderPurchaseRunningTotal();
+  });
+
+  row.querySelector('.pi-color').addEventListener('change', function() {
+    if (this.value !== '__new_color__') { renderPurchaseRunningTotal(); return; }
+    const productId = row.querySelector('.pi-product').value;
+    const sel = this;
+    if (!productId) { sel.value = ''; return; }
+    showPrompt('Nombre del nuevo color:', '', colorName => {
+      if (!colorName) { sel.value = ''; return; }
+      const ok = addColorToProduct(productId, colorName, 0);
+      if (ok === false) { showToast('Ese color ya existe.'); sel.value = ''; return; }
+      updateColorSelectForRow(row, productId);
+      sel.value = colorName;
+      renderPurchaseRunningTotal();
+    }, { title: 'Nuevo color' });
+  });
+
+  list.appendChild(row);
+}
+
+function renderPurchaseRunningTotal() {
+  const rows = document.querySelectorAll('.purchase-item-row');
+  let total = 0;
+  rows.forEach(row => {
+    const price = parseFloat(row.querySelector('.pi-price')?.value) || 0;
+    const qty   = parseInt(row.querySelector('.pi-qty')?.value)     || 0;
+    total += price * qty;
+  });
+  total += parseFloat(document.getElementById('purchase-shipping')?.value) || 0;
+  total += parseFloat(document.getElementById('purchase-customs')?.value)  || 0;
+  document.getElementById('purchase-running-total').textContent = fmt(total);
+}
+
+function resetPurchaseForm() {
+  document.getElementById('purchase-items-list').innerHTML = '';
+  document.getElementById('purchase-shipping').value = '0';
+  document.getElementById('purchase-customs').value  = '0';
+  addPurchaseItemRow();
+  renderPurchaseRunningTotal();
+}
+
+/* ================================================================
+   EDIT PURCHASE
+   ================================================================ */
+
+function updatePurchase(purchaseId, { items, shipping, customs }) {
+  const purchases = getPurchases();
+  const old = purchases.find(p => p.id === purchaseId);
+  if (!old) return;
+  // Only touch product stock if the purchase was already received
+  if ((old.status || 'received') === 'received') {
+    const arr = getProducts();
+    old.items.forEach(item => {
+      const prod = arr.find(p => p.id === item.productId);
+      if (!prod) return;
+      const color = prod.colors.find(c => c.name === item.colorName);
+      if (color) color.total = Math.max(0, color.total - item.quantity);
+    });
+    items.forEach(item => {
+      const prod = arr.find(p => p.id === item.productId);
+      if (!prod) return;
+      const color = prod.colors.find(c => c.name === item.colorName);
+      if (color) color.total += item.quantity;
+    });
+    saveProducts(arr);
+  }
+  const itemsTotal = items.reduce((s, i) => s + i.unitCost * i.quantity, 0);
+  const total = itemsTotal + (shipping || 0) + (customs || 0);
+  const idx = purchases.findIndex(p => p.id === purchaseId);
+  if (idx >= 0) purchases[idx] = { ...old, items, shipping: shipping || 0, customs: customs || 0, total };
+  savePurchases(purchases);
+}
+
+function renderEditPurchaseTotal() {
+  const rows = document.querySelectorAll('#ep-items-list .purchase-item-row');
+  let total = 0;
+  rows.forEach(row => {
+    total += (parseFloat(row.querySelector('.pi-price')?.value) || 0) *
+             (parseInt(row.querySelector('.pi-qty')?.value)   || 0);
+  });
+  total += parseFloat(document.getElementById('ep-shipping')?.value) || 0;
+  total += parseFloat(document.getElementById('ep-customs')?.value)  || 0;
+  document.getElementById('ep-running-total').textContent = fmt(total);
+}
+
+function addEditPurchaseRow(prefill) {
+  const list  = document.getElementById('ep-items-list');
+  const rowId = genId();
+  const row   = document.createElement('div');
+  row.className     = 'purchase-item-row';
+  row.dataset.rowId = rowId;
+  row.innerHTML = `
+    <select class="pi-product">
+      <option value="">— Seleccionar producto —</option>
+      ${buildProductOptions()}
+      <option value="__new__">+ Nuevo producto...</option>
+    </select>
+    <select class="pi-color" disabled>
+      <option value="">— Color —</option>
+    </select>
+    <input type="number" class="pi-price" placeholder="Costo unit." min="0" step="1">
+    <input type="number" class="pi-qty"   placeholder="Cant." min="1" value="1">
+    <button type="button" class="btn-icon pi-remove" title="Eliminar fila">✕</button>`;
+
+  if (prefill) {
+    const prodSel = row.querySelector('.pi-product');
+    prodSel.value = prefill.productId || '';
+    updateColorSelectForRow(row, prefill.productId);
+    row.querySelector('.pi-color').value  = prefill.colorName || '';
+    row.querySelector('.pi-price').value  = prefill.unitCost  || '';
+    row.querySelector('.pi-qty').value    = prefill.quantity  || 1;
+  }
+
+  row.querySelector('.pi-product').addEventListener('change', function() {
+    if (this.value === '__new__') {
+      window._pendingNewProductRow = rowId;
+      document.getElementById('form-add-product').reset();
+      document.querySelectorAll('#modal-add-product .field-error').forEach(el => el.classList.remove('show'));
+      this.value = '';
+      openModal('modal-add-product');
+      return;
+    }
+    updateColorSelectForRow(row, this.value);
+    renderEditPurchaseTotal();
+  });
+  row.querySelector('.pi-color').addEventListener('change', function() {
+    if (this.value !== '__new_color__') { renderEditPurchaseTotal(); return; }
+    const productId = row.querySelector('.pi-product').value;
+    if (!productId) { this.value = ''; return; }
+    const sel = this;
+    showPrompt('Nombre del nuevo color:', '', colorName => {
+      if (!colorName) { sel.value = ''; return; }
+      const ok = addColorToProduct(productId, colorName, 0);
+      if (ok === false) { showToast('Ese color ya existe.'); sel.value = ''; return; }
+      updateColorSelectForRow(row, productId);
+      sel.value = colorName;
+      renderEditPurchaseTotal();
+    }, { title: 'Nuevo color' });
+  });
+
+  list.appendChild(row);
+}
+
+function renderEditPurchaseModal(purchaseId) {
+  const purchase = getPurchases().find(p => p.id === purchaseId);
+  if (!purchase) return;
+  window._editingPurchaseId = purchaseId;
+  document.getElementById('ep-items-list').innerHTML = '';
+  purchase.items.forEach(item => addEditPurchaseRow(item));
+  document.getElementById('ep-shipping').value = purchase.shipping || 0;
+  document.getElementById('ep-customs').value  = purchase.customs  || 0;
+  document.getElementById('ep-form-error').classList.remove('show');
+  renderEditPurchaseTotal();
+}
+
+/* ================================================================
+   MODAL SYSTEM
+   ================================================================ */
+let modalStack = [];
+
+function openModal(modalId) {
+  document.getElementById(modalId).classList.add('active');
+  document.getElementById('modal-overlay').classList.add('active');
+  modalStack.push(modalId);
+}
+function closeTopModal() {
+  if (!modalStack.length) return;
+  const top = modalStack.pop();
+  document.getElementById(top).classList.remove('active');
+  if (!modalStack.length) document.getElementById('modal-overlay').classList.remove('active');
+}
+function closeAllModals() {
+  modalStack.forEach(id => document.getElementById(id).classList.remove('active'));
+  modalStack = [];
+  document.getElementById('modal-overlay').classList.remove('active');
+}
+
+/* ================================================================
+   CONFIRM / PROMPT
+   ================================================================ */
+
+function showConfirm(message, onConfirm, { title = 'Confirmar', okLabel = 'Confirmar' } = {}) {
+  document.getElementById('confirm-title').textContent   = title;
+  document.getElementById('confirm-message').textContent = message;
+  document.getElementById('confirm-ok').textContent      = okLabel;
+  document.getElementById('confirm-ok').onclick = () => { closeTopModal(); onConfirm(); };
+  document.getElementById('confirm-cancel').onclick = closeTopModal;
+  openModal('modal-confirm');
+}
+
+function showPrompt(label, defaultValue, onConfirm, { title = 'Ingresar' } = {}) {
+  document.getElementById('prompt-title').textContent = title;
+  document.getElementById('prompt-label').textContent = label;
+  const input = document.getElementById('prompt-input');
+  input.value = defaultValue || '';
+  input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('prompt-ok').click(); } };
+  document.getElementById('prompt-ok').onclick = () => { const v = input.value.trim(); closeTopModal(); onConfirm(v || null); };
+  document.getElementById('prompt-cancel').onclick  = () => { closeTopModal(); onConfirm(null); };
+  openModal('modal-prompt');
+  setTimeout(() => input.focus(), 80);
+}
+
+/* ================================================================
+   TOAST
+   ================================================================ */
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+/* ================================================================
+   EVENT LISTENERS
+   ================================================================ */
+function initEventListeners() {
+
+  /* ── Borrar datos ── */
+
+  /* ── Tabs ── */
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      document.getElementById('tab-inventario').style.display = tab === 'inventario' ? '' : 'none';
+      document.getElementById('tab-transito').style.display   = tab === 'transito'   ? '' : 'none';
+      document.getElementById('tab-finanzas').style.display   = tab === 'finanzas'   ? '' : 'none';
+      if (tab === 'finanzas') { renderComprasHistory(); renderVentasHistory(); renderBalance(); }
+      if (tab === 'transito') { renderTransitTab(); }
+    });
+  });
+
+  /* ── Overlay click — close only the topmost modal ── */
+  document.getElementById('modal-overlay').addEventListener('click', closeTopModal);
+  document.addEventListener('click', e => {
+    if (e.target.classList.contains('modal') && e.target.classList.contains('active')) {
+      closeTopModal();
+    }
+  });
+
+  /* ── Modal close buttons (data-close attr) ── */
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-close]')) {
+      closeTopModal();
+      window._pendingNewProductRow = null;
+    }
+  });
+
+  /* ── Add product form submit (triggered from purchase) ── */
+  document.getElementById('form-add-product').addEventListener('submit', e => {
+    e.preventDefault();
+    const name  = document.getElementById('ap-name').value.trim();
+    const color = document.getElementById('ap-color').value.trim();
+    if (!name) { document.getElementById('ap-name-err').classList.add('show'); return; }
+    document.getElementById('ap-name-err').classList.remove('show');
+
+    const newProduct = addProduct({ name, imageUrl: '', price: 0, firstColor: color, sourceUrl: '' });
+    refreshPurchaseProductSelects();
+
+    if (window._pendingNewProductRow) {
+      const row = document.querySelector(`[data-row-id="${window._pendingNewProductRow}"]`);
+      if (row) {
+        row.querySelector('.pi-product').value = newProduct.id;
+        updateColorSelectForRow(row, newProduct.id);
+        row.querySelector('.pi-color').value = color;
+      }
+      window._pendingNewProductRow = null;
+    }
+
+    renderProductGrid();
+    closeTopModal();
+    showToast(`Producto "${name}" creado ✓`);
+  });
+
+  /* ── Product grid click ── */
+  document.getElementById('product-grid').addEventListener('click', e => {
+    const card = e.target.closest('.product-card');
+    if (!card) return;
+    window._currentProductId = card.dataset.id;
+    renderProductDetail(card.dataset.id);
+    openModal('modal-product-detail');
+  });
+
+  /* ── Edit product button (opens edit modal) ── */
+  document.getElementById('btn-edit-product').addEventListener('click', () => {
+    const id = window._currentProductId;
+    if (!id) return;
+    renderEditModal(id);
+    openModal('modal-edit-product');
+  });
+
+  /* ── Edit modal: save changes ── */
+  document.getElementById('form-edit-product').addEventListener('submit', e => {
+    e.preventDefault();
+    const id = window._currentProductId;
+    if (!id) return;
+    const name = document.getElementById('ep-name').value.trim();
+    if (!name) { document.getElementById('ep-name-err').classList.add('show'); return; }
+    document.getElementById('ep-name-err').classList.remove('show');
+    // Collect and validate color stock redistribution
+    const p = getProductById(id);
+    const originalTotal = p.colors.reduce((s, c) => s + c.total, 0);
+    const colorTotals = [];
+    let valid = true;
+    document.querySelectorAll('#edit-colors-list .edit-color-row[data-color-name]').forEach(row => {
+      const colorName = row.dataset.colorName;
+      const total     = parseInt(row.querySelector('.edit-color-stock')?.value) || 0;
+      const sold      = parseInt(row.querySelector('.edit-color-stock')?.dataset.sold) || 0;
+      if (total < sold) { valid = false; }
+      colorTotals.push({ colorName, total });
+    });
+    const newTotal = colorTotals.reduce((s, c) => s + c.total, 0);
+    const errEl = document.getElementById('ep-color-err');
+    if (!valid) {
+      errEl.textContent = 'El stock de un color no puede ser menor a las unidades ya vendidas.';
+      errEl.classList.add('show'); return;
+    }
+    if (newTotal !== originalTotal) {
+      errEl.textContent = `El total distribuido (${newTotal}) debe ser igual al stock total (${originalTotal}).`;
+      errEl.classList.add('show'); return;
+    }
+    errEl.classList.remove('show');
+    updateProduct(id, {
+      name,
+      price:       document.getElementById('ep-price').value,
+      imageUrl:    window._epImageB64 || '',
+      sourceUrl:   document.getElementById('ep-source').value.trim(),
+      colorTotals: colorTotals.length ? colorTotals : undefined,
+    });
+    renderProductGrid();
+    renderProductDetail(id);
+    closeTopModal();
+    showToast('Cambios guardados ✓');
+  });
+
+  /* ── Edit modal: add color ── */
+  document.getElementById('btn-ep-add-color').addEventListener('click', () => {
+    const id    = window._currentProductId;
+    const name  = document.getElementById('ep-new-color').value.trim();
+    const errEl = document.getElementById('ep-color-err');
+    if (!name) { errEl.textContent = 'Ingresa el nombre del color.'; errEl.classList.add('show'); return; }
+    const ok = addColorToProduct(id, name, 0);
+    if (ok === false) { errEl.textContent = 'Ese color ya existe.'; errEl.classList.add('show'); return; }
+    errEl.classList.remove('show');
+    document.getElementById('ep-new-color').value = '';
+    renderEditColorList(id);
+    renderProductGrid();
+  });
+
+  /* ── Edit modal: delete color (delegation) ── */
+  document.getElementById('edit-colors-list').addEventListener('click', e => {
+    const btn = e.target.closest('[data-ep-delete-color]');
+    if (!btn) return;
+    const pid       = btn.dataset.pid;
+    const colorName = btn.dataset.epDeleteColor;
+    const arr       = getProducts();
+    const p         = arr.find(p => p.id === pid);
+    if (!p || p.colors.length <= 1) { showToast('Debe quedar al menos un color.'); return; }
+    p.colors = p.colors.filter(c => c.name !== colorName);
+    saveProducts(arr);
+    renderEditColorList(pid);
+    renderProductGrid();
+    showToast('Color eliminado');
+  });
+
+  /* ── Edit modal: delete product ── */
+  document.getElementById('btn-ep-delete').addEventListener('click', () => {
+    const id = window._currentProductId;
+    if (!id) return;
+    const p = getProductById(id);
+    if (!p) return;
+    showConfirm(`¿Eliminar "${p.name}"? Esta acción no se puede deshacer.`, () => {
+      deleteProduct(id);
+      renderProductGrid();
+      closeAllModals();
+      showToast('Producto eliminado');
+    }, { title: 'Eliminar producto', okLabel: 'Sí, eliminar' });
+  });
+
+  /* ── Detail: inline edit ── */
+  document.getElementById('modal-product-detail').addEventListener('change', e => {
+    const el = e.target;
+    if (!el.classList.contains('inline-edit')) return;
+    const pid = el.dataset.pid, color = el.dataset.color, field = el.dataset.field;
+    if (field === 'total') updateColorStock(pid, color, el.value);
+    renderProductGrid();
+    renderProductDetail(pid);
+  });
+
+  /* ── Detail: open reservations modal ── */
+  document.getElementById('modal-product-detail').addEventListener('click', e => {
+    const btn = e.target.closest('[data-open-reservations]');
+    if (!btn) return;
+    renderReservationsModal(btn.dataset.pid, btn.dataset.openReservations);
+    openModal('modal-reservations');
+  });
+
+  /* ── Reservations: add ── */
+  document.getElementById('btn-res-add').addEventListener('click', () => {
+    const pid      = window._reservationProductId;
+    const color    = window._reservationColorName;
+    const person   = document.getElementById('res-person').value.trim();
+    const qty      = parseInt(document.getElementById('res-qty').value) || 0;
+    const errEl    = document.getElementById('res-error');
+    if (!person) { errEl.textContent = 'Ingresa el nombre de quien reserva.'; errEl.classList.add('show'); return; }
+    if (qty < 1)  { errEl.textContent = 'La cantidad debe ser al menos 1.';   errEl.classList.add('show'); return; }
+    const p = getProductById(pid);
+    const c = p?.colors.find(c => c.name === color);
+    const maxReservable = window._reservationMax !== null ? window._reservationMax : colorAvailable(c);
+    if (qty > maxReservable) {
+      errEl.textContent = window._reservationMax !== null
+        ? `Solo hay ${maxReservable} unidades disponibles para reservar en este pedido.`
+        : `Solo hay ${maxReservable} unidades disponibles en inventario.`;
+      errEl.classList.add('show'); return;
+    }
+    errEl.classList.remove('show');
+    addReservation(pid, color, person, qty);
+    renderReservationsModal(pid, color, _refreshedReservationOpts(pid, color));
+    renderProductGrid();
+    renderTransitTab();
+    renderProductDetail(pid);
+    showToast(`Reserva de ${person} registrada ✓`);
+  });
+
+  /* ── Reservations: cancel (delegation) ── */
+  document.getElementById('reservations-list').addEventListener('click', e => {
+    const btn = e.target.closest('[data-cancel-res]');
+    if (!btn) return;
+    const pid   = window._reservationProductId;
+    const color = window._reservationColorName;
+    removeReservation(pid, color, btn.dataset.cancelRes);
+    renderReservationsModal(pid, color, _refreshedReservationOpts(pid, color));
+    renderProductGrid();
+    renderTransitTab();
+    renderProductDetail(pid);
+    showToast('Reserva cancelada');
+  });
+
+  /* ── Detail: delete color ── */
+  document.getElementById('modal-product-detail').addEventListener('click', e => {
+    const btn = e.target.closest('[data-delete-color]');
+    if (!btn) return;
+    const pid = btn.dataset.pid, colorName = btn.dataset.deleteColor;
+    const arr = getProducts();
+    const p   = arr.find(p => p.id === pid);
+    if (!p || p.colors.length <= 1) { showToast('El producto debe tener al menos un color.'); return; }
+    p.colors = p.colors.filter(c => c.name !== colorName);
+    saveProducts(arr);
+    renderProductDetail(pid); renderProductGrid();
+    showToast('Color eliminado');
+  });
+
+  /* ── Sell modal close ── */
+  document.getElementById('sell-close').addEventListener('click', closeTopModal);
+  document.getElementById('sell-cancel').addEventListener('click', closeTopModal);
+
+  /* ── Sell: update subtotal + reservations on color/qty change ── */
+  document.getElementById('sell-qty').addEventListener('input', () => {
+    const p = getProductById(window._currentProductId);
+    if (p) updateSellSubtotal(p.price);
+  });
+  document.getElementById('sell-color').addEventListener('input', () => {
+    window._sellReservationId = null;
+    renderSellReservations();
+    const p = getProductById(window._currentProductId);
+    if (p) updateSellSubtotal(p.price);
+  });
+
+  /* ── Sell: reservation chip click ── */
+  document.getElementById('sell-reservations').addEventListener('click', e => {
+    const chip = e.target.closest('.sell-res-chip');
+    if (!chip) return;
+    const resId = chip.dataset.resId;
+    if (window._sellReservationId === resId) {
+      window._sellReservationId = null;
+    } else {
+      window._sellReservationId = resId;
+      document.getElementById('sell-qty').value = chip.dataset.resQty;
+      const p = getProductById(window._currentProductId);
+      if (p) updateSellSubtotal(p.price);
+    }
+    renderSellReservations();
+  });
+
+  /* ── Sell form submit ── */
+  document.getElementById('form-sell').addEventListener('submit', e => {
+    e.preventDefault();
+    const p         = getProductById(window._currentProductId);
+    if (!p) return;
+    const colorName = document.getElementById('sell-color').value;
+    const qty       = parseInt(document.getElementById('sell-qty').value) || 0;
+    const errEl     = document.getElementById('sell-qty-err');
+    const color     = p.colors.find(c => c.name === colorName);
+    if (!color || qty < 1) { errEl.textContent = 'Ingresa una cantidad válida.'; errEl.classList.add('show'); return; }
+    const selectedRes = window._sellReservationId
+      ? (color.reservations || []).find(r => r.id === window._sellReservationId)
+      : null;
+    const effectiveAvail = colorAvailable(color) + (selectedRes ? selectedRes.quantity : 0);
+    if (qty > effectiveAvail) {
+      errEl.textContent = `Solo hay ${effectiveAvail} unidad${effectiveAvail !== 1 ? 'es' : ''} disponible${effectiveAvail !== 1 ? 's' : ''} de ${colorName}${selectedRes ? ' (incluyendo reserva)' : ''}.`;
+      errEl.classList.add('show'); return;
+    }
+    errEl.classList.remove('show');
+    const note = document.getElementById('sell-note').value;
+    recordSale(p.id, colorName, qty, note);
+    if (window._sellReservationId) {
+      removeReservation(p.id, colorName, window._sellReservationId);
+      window._sellReservationId = null;
+    }
+    renderProductGrid(); renderProductDetail(p.id); renderBalance();
+    closeTopModal();
+    showToast(`Venta ${qty} × ${p.name} (${colorName}) registrada ✓`);
+  });
+
+  /* ── Purchase: add row ── */
+  document.getElementById('btn-add-row').addEventListener('click', () => {
+    addPurchaseItemRow();
+    renderPurchaseRunningTotal();
+  });
+
+  /* ── Purchase items: remove + running total ── */
+  document.getElementById('purchase-items-list').addEventListener('click', e => {
+    if (!e.target.classList.contains('pi-remove')) return;
+    const list = document.getElementById('purchase-items-list');
+    if (list.children.length <= 1) return;
+    e.target.closest('.purchase-item-row').remove();
+    renderPurchaseRunningTotal();
+  });
+  document.getElementById('purchase-items-list').addEventListener('input', renderPurchaseRunningTotal);
+  document.getElementById('purchase-shipping').addEventListener('input', renderPurchaseRunningTotal);
+  document.getElementById('purchase-customs').addEventListener('input', renderPurchaseRunningTotal);
+
+  /* ── Edit purchase: open (delegation on history container) ── */
+  document.getElementById('compras-history').addEventListener('click', e => {
+    const btn = e.target.closest('[data-edit-purchase]');
+    if (!btn) return;
+    renderEditPurchaseModal(btn.dataset.editPurchase);
+    openModal('modal-edit-purchase');
+  });
+
+  /* ── Edit purchase: add row ── */
+  document.getElementById('btn-ep-add-row').addEventListener('click', () => {
+    addEditPurchaseRow(null);
+    renderEditPurchaseTotal();
+  });
+
+  /* ── Edit purchase: remove row + running total ── */
+  document.getElementById('ep-items-list').addEventListener('click', e => {
+    if (!e.target.classList.contains('pi-remove')) return;
+    const list = document.getElementById('ep-items-list');
+    if (list.children.length <= 1) return;
+    e.target.closest('.purchase-item-row').remove();
+    renderEditPurchaseTotal();
+  });
+  document.getElementById('ep-items-list').addEventListener('input', renderEditPurchaseTotal);
+  document.getElementById('ep-shipping').addEventListener('input', renderEditPurchaseTotal);
+  document.getElementById('ep-customs').addEventListener('input', renderEditPurchaseTotal);
+
+  /* ── Edit purchase: delete ── */
+  document.getElementById('btn-delete-purchase').addEventListener('click', () => {
+    const id = window._editingPurchaseId;
+    if (!id) return;
+    const p = getPurchases().find(p => p.id === id);
+    if (!p) return;
+    const isTransit = (p.status || 'received') === 'transit';
+    showConfirm(
+      isTransit
+        ? '¿Eliminar esta compra? El pedido desaparecerá de "En tránsito".'
+        : '¿Eliminar esta compra? El stock comprado se restará del inventario.',
+      () => {
+        deletePurchase(id);
+        renderProductGrid();
+        renderTransitTab();
+        renderComprasHistory();
+        renderBalance();
+        closeAllModals();
+        showToast('Compra eliminada ✓');
+      },
+      { title: 'Eliminar compra', okLabel: 'Sí, eliminar' }
+    );
+  });
+
+  /* ── Edit purchase: save ── */
+  document.getElementById('form-edit-purchase').addEventListener('submit', e => {
+    e.preventDefault();
+    const id = window._editingPurchaseId;
+    if (!id) return;
+    const rows  = document.querySelectorAll('#ep-items-list .purchase-item-row');
+    const items = [];
+    rows.forEach(row => {
+      const productId = row.querySelector('.pi-product')?.value || '';
+      const colorName = row.querySelector('.pi-color')?.value   || '';
+      const unitCost  = parseFloat(row.querySelector('.pi-price')?.value) || 0;
+      const quantity  = parseInt(row.querySelector('.pi-qty')?.value)     || 1;
+      const p         = getProductById(productId);
+      if (p && colorName && colorName !== '__new_color__' && unitCost > 0) {
+        items.push({ productId, productName: p.name, colorName, unitCost, quantity });
+      }
+    });
+    const errEl = document.getElementById('ep-form-error');
+    if (!items.length) {
+      errEl.textContent = 'Agrega al menos un ítem con producto, color y costo.';
+      errEl.classList.add('show'); return;
+    }
+    errEl.classList.remove('show');
+    const shipping = parseFloat(document.getElementById('ep-shipping').value) || 0;
+    const customs  = parseFloat(document.getElementById('ep-customs').value)  || 0;
+    updatePurchase(id, { items, shipping, customs });
+    renderProductGrid();
+    renderTransitTab();
+    renderComprasHistory();
+    renderBalance();
+    closeTopModal();
+    showToast('Compra actualizada ✓');
+  });
+
+  /* ── Ventas: edit / delete (delegation) ── */
+  document.getElementById('ventas-history').addEventListener('click', e => {
+    const editBtn = e.target.closest('[data-edit-sale]');
+    if (editBtn) {
+      renderEditSaleModal(editBtn.dataset.editSale);
+      openModal('modal-edit-sale');
+      return;
+    }
+    const delBtn = e.target.closest('[data-delete-sale]');
+    if (delBtn) {
+      const saleId = delBtn.dataset.deleteSale;
+      const sale   = getSales().find(s => s.id === saleId);
+      if (!sale) return;
+      showConfirm(
+        `¿Eliminar la venta de ${sale.quantity} × ${sale.productName} (${sale.color})? El stock vuelve al inventario.`,
+        () => {
+          deleteSale(saleId);
+          renderVentasHistory(); renderProductGrid(); renderBalance();
+          showToast('Venta eliminada y stock restaurado');
+        },
+        { title: 'Eliminar venta', okLabel: 'Sí, eliminar' }
+      );
+    }
+  });
+
+  /* ── Edit sale: live total ── */
+  ['edit-sale-qty', 'edit-sale-price'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateEditSaleTotal);
+  });
+
+  /* ── Edit sale: save ── */
+  document.getElementById('form-edit-sale').addEventListener('submit', e => {
+    e.preventDefault();
+    const saleId = window._editSaleId;
+    if (!saleId) return;
+    const qty   = parseInt(document.getElementById('edit-sale-qty').value)   || 0;
+    const price = parseInt(document.getElementById('edit-sale-price').value) || 0;
+    const date  = document.getElementById('edit-sale-date').value;
+    const errEl = document.getElementById('edit-sale-qty-err');
+    if (qty < 1) { errEl.textContent = 'La cantidad debe ser al menos 1.'; errEl.classList.add('show'); return; }
+    errEl.classList.remove('show');
+    const note = document.getElementById('edit-sale-note').value;
+    updateSale(saleId, { quantity: qty, pricePerUnit: price, date: date ? new Date(date).toISOString() : new Date().toISOString(), note });
+    renderVentasHistory(); renderProductGrid(); renderBalance();
+    closeTopModal();
+    showToast('Venta actualizada ✓');
+  });
+
+  /* ── Purchase form submit ── */
+  document.getElementById('form-purchase').addEventListener('submit', e => {
+    e.preventDefault();
+    const rows  = document.querySelectorAll('.purchase-item-row');
+    const items = [];
+    rows.forEach(row => {
+      const productId  = row.querySelector('.pi-product')?.value || '';
+      const colorName  = row.querySelector('.pi-color')?.value   || '';
+      const unitCost   = parseFloat(row.querySelector('.pi-price')?.value) || 0;
+      const quantity   = parseInt(row.querySelector('.pi-qty')?.value)     || 1;
+      const p          = getProductById(productId);
+      if (p && colorName && colorName !== '__new_color__' && unitCost > 0) {
+        items.push({ productId, productName: p.name, colorName, unitCost, quantity });
+      }
+    });
+    const errEl = document.getElementById('purchase-form-error');
+    if (!items.length) {
+      errEl.textContent = 'Agrega al menos un ítem con producto, color y costo.';
+      errEl.classList.add('show'); return;
+    }
+    errEl.classList.remove('show');
+    const shipping = parseFloat(document.getElementById('purchase-shipping').value) || 0;
+    const customs  = parseFloat(document.getElementById('purchase-customs').value)  || 0;
+    addPurchase({ items, shipping, customs });
+    resetPurchaseForm();
+    renderProductGrid();
+    renderTransitTab();
+    renderComprasHistory();
+    renderBalance();
+    showToast('Compra registrada ✓');
+  });
+
+  /* ── Marcar compra como recibida ── */
+  document.getElementById('compras-history').addEventListener('click', e => {
+    const btn = e.target.closest('[data-receive-purchase]');
+    if (!btn) return;
+    const purchaseId = btn.dataset.receivePurchase;
+    const purchase   = getPurchases().find(p => p.id === purchaseId);
+    if (!purchase) return;
+    const names = [...new Set(purchase.items.map(i => i.productName))].join(', ');
+    showConfirm(
+      `¿Marcar este pedido como recibido? El stock de ${names} se agregará al inventario.`,
+      () => {
+        receivePurchase(purchaseId);
+        renderProductGrid();
+        renderTransitTab();
+        renderComprasHistory();
+        renderBalance();
+        showToast('Pedido recibido — stock agregado al inventario ✓');
+      },
+      { title: 'Confirmar recepción', okLabel: '✓ Sí, llegó' }
+    );
+  });
+
+  /* ── Pestaña tránsito: reservar desde card ── */
+  document.getElementById('transit-grid').addEventListener('click', e => {
+    const btn = e.target.closest('[data-transit-reserve]');
+    if (!btn) return;
+    const productId    = btn.dataset.transitReserve;
+    const colorName    = btn.dataset.transitColor;
+    const p            = getProductById(productId);
+    const color        = p?.colors.find(c => c.name === colorName);
+    const transitTotal = transitQtyForColor(productId, colorName);
+    const alreadyRes   = color ? colorReservedCount(color) : 0;
+    const maxQty       = Math.max(0, transitTotal - alreadyRes);
+    renderReservationsModal(productId, colorName, { maxQty, transitTotal });
+    openModal('modal-reservations');
+  });
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+async function init() {
+  // Show loading overlay while fetching cloud data
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) overlay.style.display = 'flex';
+  await initCloudData();
+  if (overlay) overlay.style.display = 'none';
+
+  addPurchaseItemRow();
+  renderProductGrid();
+  renderTransitTab();
+  renderBalance();
+  initEventListeners();
+
+  // Register service worker for PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
