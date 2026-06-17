@@ -874,6 +874,31 @@ tbody tr:hover td { background: #faf6ff; }
   </div>
 </div>
 
+<!-- ── Modal: Nube / Sync ── -->
+<div class="modal" id="modal-cloud">
+  <div class="modal__box" style="max-width:380px">
+    <div class="modal__header">
+      <span class="modal__title">Datos y sincronización</span>
+      <button class="modal__close" data-close>✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.75rem;padding-bottom:.5rem">
+      <p style="font-size:.85rem;color:var(--c-text-soft);margin:0" id="cloud-status-text">—</p>
+      <hr style="border:none;border-top:1.5px solid var(--c-bg);margin:0">
+      <button class="btn btn-ghost" onclick="exportData()">⬇️ Exportar datos (JSON)</button>
+      <div>
+        <input type="file" id="import-file" accept=".json" style="display:none"
+          onchange="if(this.files[0]) importData(this.files[0])">
+        <button class="btn btn-secondary" style="width:100%" onclick="document.getElementById('import-file').click()">
+          ⬆️ Importar datos desde JSON
+        </button>
+        <p style="font-size:.75rem;color:var(--c-text-soft);margin:.4rem 0 0">
+          Exporta desde el archivo local y luego importa aquí para subir a Neon.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Modal: Confirmar ── -->
 <div class="modal" id="modal-confirm">
   <div class="modal__box" style="max-width:380px">
@@ -946,6 +971,8 @@ function save(key, arr) {
 function setCloudBtn(icon, title) {
   const btn = document.getElementById('btn-cloud-sync');
   if (btn) { btn.textContent = icon; btn.title = title; btn.style.opacity = icon === '☁️' ? '.35' : '1'; }
+  const st = document.getElementById('cloud-status-text');
+  if (st) st.textContent = title;
 }
 
 async function cloudPut(key, value) {
@@ -1003,40 +1030,58 @@ async function initCloudData() {
   }
 }
 
-async function manualCloudSync() {
-  if (_cloudOK) {
-    showToast('🌐 Ya estás conectado a Neon');
-    return;
-  }
-  setCloudBtn('🔄', 'Conectando…');
-  try {
-    // Test connection
-    const r = await fetch('/api/data?key=' + KEYS.products);
-    if (!r.ok) throw new Error(r.status);
-    const cloudProducts = await r.json();
-    _cloudOK = true;
+function manualCloudSync() {
+  openModal('modal-cloud');
+}
 
-    const cloudEmpty = !cloudProducts.length;
-    if (cloudEmpty && storageOK) {
-      const lsP  = JSON.parse(localStorage.getItem(KEYS.products)  || '[]');
-      const lsPu = JSON.parse(localStorage.getItem(KEYS.purchases) || '[]');
-      const lsS  = JSON.parse(localStorage.getItem(KEYS.sales)     || '[]');
-      if (lsP.length || lsPu.length || lsS.length) {
-        await Promise.all([
-          cloudPut(KEYS.products,  lsP),
-          cloudPut(KEYS.purchases, lsPu),
-          cloudPut(KEYS.sales,     lsS),
-        ]);
-        showToast('Datos subidos a Neon ✓');
-        setCloudBtn('🌐', 'Conectado a Neon');
-        return;
-      }
+function exportData() {
+  const data = {
+    products:  load(KEYS.products),
+    purchases: load(KEYS.purchases),
+    sales:     load(KEYS.sales),
+    exportedAt: new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'stimmilab-datos.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Datos exportados ✓');
+}
+
+async function importData(file) {
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.products || !data.purchases || !data.sales) throw new Error('Archivo inválido');
+
+    _mem[KEYS.products]  = data.products;
+    _mem[KEYS.purchases] = data.purchases;
+    _mem[KEYS.sales]     = data.sales;
+
+    if (storageOK) {
+      localStorage.setItem(KEYS.products,  JSON.stringify(data.products));
+      localStorage.setItem(KEYS.purchases, JSON.stringify(data.purchases));
+      localStorage.setItem(KEYS.sales,     JSON.stringify(data.sales));
     }
-    setCloudBtn('🌐', 'Conectado a Neon');
-    showToast('Conectado a Neon ✓');
+    if (_cloudOK) {
+      setCloudBtn('🔄', 'Subiendo a Neon…');
+      await Promise.all([
+        cloudPut(KEYS.products,  data.products),
+        cloudPut(KEYS.purchases, data.purchases),
+        cloudPut(KEYS.sales,     data.sales),
+      ]);
+      setCloudBtn('🌐', 'Conectado a Neon');
+    }
+
+    renderProductGrid();
+    renderTransitTab();
+    renderBalance();
+    closeTopModal();
+    showToast('Datos importados y subidos a Neon ✓');
   } catch(e) {
-    setCloudBtn('☁️', 'Sin conexión — click para reintentar');
-    showToast('No se pudo conectar: ' + e.message);
+    showToast('Error al importar: ' + e.message);
   }
 }
 
