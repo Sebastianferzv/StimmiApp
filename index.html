@@ -511,14 +511,7 @@ tbody tr:hover td { background: #faf6ff; }
     <div class="header-sub">gestión de tienda</div>
   </div>
   <div class="header-spacer"></div>
-  <div style="display:flex;align-items:center;gap:.5rem">
-    <button id="btn-export" class="btn btn-ghost btn-sm" onclick="exportData()" title="Exportar datos a JSON" style="font-size:.75rem">⬇️ Exportar</button>
-    <label id="btn-import-label" class="btn btn-secondary btn-sm" style="font-size:.75rem;cursor:pointer;margin:0" title="Importar datos desde JSON">
-      ⬆️ Importar
-      <input type="file" id="import-file" accept=".json" style="display:none" onchange="if(this.files[0]) importData(this.files[0])">
-    </label>
-    <span id="btn-cloud-sync" title="Estado de sincronización" style="font-size:1.2rem;opacity:.6">☁️</span>
-  </div>
+  <span id="btn-cloud-sync" title="Estado de sincronización" style="font-size:1.2rem;opacity:.6">☁️</span>
 </header>
 
 <nav>
