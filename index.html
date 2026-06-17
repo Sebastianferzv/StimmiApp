@@ -511,7 +511,14 @@ tbody tr:hover td { background: #faf6ff; }
     <div class="header-sub">gestión de tienda</div>
   </div>
   <div class="header-spacer"></div>
-  <button id="btn-cloud-sync" title="Estado de sincronización" style="background:none;border:none;cursor:pointer;font-size:1.3rem;opacity:.6;padding:.25rem" onclick="manualCloudSync()">☁️</button>
+  <div style="display:flex;align-items:center;gap:.5rem">
+    <button id="btn-export" class="btn btn-ghost btn-sm" onclick="exportData()" title="Exportar datos a JSON" style="font-size:.75rem">⬇️ Exportar</button>
+    <label id="btn-import-label" class="btn btn-secondary btn-sm" style="font-size:.75rem;cursor:pointer;margin:0" title="Importar datos desde JSON">
+      ⬆️ Importar
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="if(this.files[0]) importData(this.files[0])">
+    </label>
+    <span id="btn-cloud-sync" title="Estado de sincronización" style="font-size:1.2rem;opacity:.6">☁️</span>
+  </div>
 </header>
 
 <nav>
@@ -874,31 +881,6 @@ tbody tr:hover td { background: #faf6ff; }
   </div>
 </div>
 
-<!-- ── Modal: Nube / Sync ── -->
-<div class="modal" id="modal-cloud">
-  <div class="modal__box" style="max-width:380px">
-    <div class="modal__header">
-      <span class="modal__title">Datos y sincronización</span>
-      <button class="modal__close" data-close>✕</button>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:.75rem;padding-bottom:.5rem">
-      <p style="font-size:.85rem;color:var(--c-text-soft);margin:0" id="cloud-status-text">—</p>
-      <hr style="border:none;border-top:1.5px solid var(--c-bg);margin:0">
-      <button class="btn btn-ghost" onclick="exportData()">⬇️ Exportar datos (JSON)</button>
-      <div>
-        <input type="file" id="import-file" accept=".json" style="display:none"
-          onchange="if(this.files[0]) importData(this.files[0])">
-        <button class="btn btn-secondary" style="width:100%" onclick="document.getElementById('import-file').click()">
-          ⬆️ Importar datos desde JSON
-        </button>
-        <p style="font-size:.75rem;color:var(--c-text-soft);margin:.4rem 0 0">
-          Exporta desde el archivo local y luego importa aquí para subir a Neon.
-        </p>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ── Modal: Confirmar ── -->
 <div class="modal" id="modal-confirm">
   <div class="modal__box" style="max-width:380px">
@@ -971,8 +953,6 @@ function save(key, arr) {
 function setCloudBtn(icon, title) {
   const btn = document.getElementById('btn-cloud-sync');
   if (btn) { btn.textContent = icon; btn.title = title; btn.style.opacity = icon === '☁️' ? '.35' : '1'; }
-  const st = document.getElementById('cloud-status-text');
-  if (st) st.textContent = title;
 }
 
 async function cloudPut(key, value) {
@@ -1030,9 +1010,6 @@ async function initCloudData() {
   }
 }
 
-function manualCloudSync() {
-  openModal('modal-cloud');
-}
 
 function exportData() {
   const data = {
