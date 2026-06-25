@@ -1,5 +1,5 @@
 const CACHE = 'stimmilab-v1';
-const STATIC = ['/', '/index.html', '/icon.svg', '/manifest.json'];
+const STATIC = ['/icon.svg', '/manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC)));
@@ -26,7 +26,19 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Static assets: cache-first
+  // HTML navigation: network-first, fall back to cache if offline
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Static assets (icon, manifest): cache-first
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
       const clone = res.clone();
