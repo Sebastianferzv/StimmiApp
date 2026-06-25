@@ -813,6 +813,28 @@ tbody tr:hover td { background: #faf6ff; }
         </div>
       </form>
     </div>
+
+    <!-- Vista: confirmar venta de pack -->
+    <div id="pack-sell-view" style="display:none">
+      <div class="sell-info" style="margin-bottom:1rem">
+        <div class="sell-info-block">
+          <label>Pack</label>
+          <strong id="sell-pack-name">—</strong>
+        </div>
+        <div class="sell-info-block">
+          <label>Precio</label>
+          <strong id="sell-pack-price">—</strong>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Comentario <span style="font-weight:400;color:var(--c-text-soft)">(opcional)</span></label>
+        <textarea id="sell-pack-note" rows="2" style="resize:vertical" placeholder="Ej: cliente Laura, envío pendiente…"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" id="btn-cancel-sell-pack">Cancelar</button>
+        <button type="button" class="btn btn-secondary" id="btn-confirm-sell-pack">✓ Confirmar venta</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1465,21 +1487,12 @@ function deletePackTemplate(id) {
   savePackTemplates(getPackTemplates().filter(t => t.id !== id));
 }
 
-/* ── Data: Packs (sale records) ── */
-function getPacks()     { return load(KEYS.packs); }
-function savePacks(arr) { save(KEYS.packs, arr); }
-function addPack({ category, charmQty, items, packPrice, note }) {
-  // Update category sold counter
-  const cats = getCategories();
-  let cat = cats.find(c => c.name === category);
-  if (!cat) { cat = { name: category, imageUrl: '', sold: 0 }; cats.push(cat); }
-  cat.sold = (cat.sold || 0) + charmQty;
-  saveCategories(cats);
-
-  // Deduct stock for additional items (same as recordSale)
-  if (items && items.length) {
+/* ── Data: Pack sale records (stored in stimmi_sales with type='pack') ── */
+function recordPackSale(template, note) {
+  // Deduct stock for additional items
+  if (template.items && template.items.length) {
     const products = getProducts();
-    items.forEach(item => {
+    template.items.forEach(item => {
       const p = products.find(p => p.id === item.productId);
       if (!p) return;
       const c = p.colors.find(c => c.name === item.colorName);
@@ -1487,15 +1500,28 @@ function addPack({ category, charmQty, items, packPrice, note }) {
     });
     saveProducts(products);
   }
-
-  const pack = {
+  // Record as a sale entry
+  const sale = {
     id: genId(), date: new Date().toISOString(),
-    category, charmQty, items: items || [], packPrice: parseFloat(packPrice) || 0, note: (note || '').trim(),
+    type: 'pack',
+    packCategory: template.category,
+    packCharmQty: template.charmQty,
+    packItems: template.items || [],
+    productName: template.name,
+    color: template.category,
+    quantity: 1,
+    pricePerUnit: template.price,
+    total: template.price,
+    note: (note || '').trim(),
   };
-  const arr = getPacks();
-  arr.push(pack);
-  savePacks(arr);
-  return pack;
+  const sales = getSales();
+  sales.push(sale);
+  saveSales(sales);
+  return sale;
+}
+function categoryCharmsSold(catName) {
+  return getSales().filter(s => s.type === 'pack' && s.packCategory === catName)
+    .reduce((sum, s) => sum + (s.packCharmQty || 0), 0);
 }
 
 /* ── Formatters ── */
@@ -1528,17 +1554,18 @@ function _productCard(p) {
 }
 
 function _categoryCard(catName, products, categories) {
-  const catMeta  = categories.find(c => c.name === catName) || { sold: 0, imageUrl: '' };
+  const catMeta  = categories.find(c => c.name === catName) || { imageUrl: '' };
   const catProds = products.filter(p => p.category === catName);
   const img      = catMeta.imageUrl || catProds.find(p => p.imageUrl)?.imageUrl || PLACEHOLDER;
   const avail    = catProds.reduce((s, p) => s + productAvailable(p), 0);
+  const sold     = categoryCharmsSold(catName);
   return `<div class="product-card category-card" data-category="${catName}">
     <img class="product-card__img" src="${img}" alt="${catName}" onerror="this.src='${PLACEHOLDER}'">
     <div class="product-card__body">
       <div class="product-card__name" title="${catName}">${catName}</div>
       <div class="product-card__stats">
         <div class="stat"><label>Disponibles</label><strong>${avail}</strong></div>
-        <div class="stat"><label>Vendidos</label><strong>${catMeta.sold || 0}</strong></div>
+        <div class="stat"><label>Vendidos</label><strong>${sold}</strong></div>
       </div>
     </div>
   </div>`;
@@ -1578,14 +1605,26 @@ function renderPackModal(categoryName) {
 function _showPackListView() {
   document.getElementById('pack-list-view').style.display   = '';
   document.getElementById('pack-create-view').style.display = 'none';
+  document.getElementById('pack-sell-view').style.display   = 'none';
 }
 
 function _showPackCreateView() {
   document.getElementById('pack-list-view').style.display   = 'none';
   document.getElementById('pack-create-view').style.display = '';
+  document.getElementById('pack-sell-view').style.display   = 'none';
   document.getElementById('form-create-pack').reset();
   document.getElementById('cp-name-err').classList.remove('show');
   document.getElementById('pack-items-list').innerHTML = '';
+}
+
+function _showPackSellView(template) {
+  document.getElementById('pack-list-view').style.display   = 'none';
+  document.getElementById('pack-create-view').style.display = 'none';
+  document.getElementById('pack-sell-view').style.display   = '';
+  document.getElementById('sell-pack-name').textContent  = template.name;
+  document.getElementById('sell-pack-price').textContent = fmt(template.price);
+  document.getElementById('sell-pack-note').value = '';
+  window._sellPackTemplate = template;
 }
 
 function renderPackTemplateList(categoryName) {
@@ -1949,18 +1988,31 @@ function renderVentasHistory() {
   if (!sales.length) { el.innerHTML = '<div class="history-empty">Sin ventas registradas aún.</div>'; return; }
   el.innerHTML = `<table>
     <thead><tr><th>Fecha</th><th>Producto</th><th>Color</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead>
-    <tbody>${sales.map(s => `<tr>
-      <td style="white-space:nowrap">${fmtDate(s.date)}</td>
-      <td>${s.productName}${s.note ? `<br><span style="font-size:.76rem;color:var(--c-text-soft);font-style:italic">${s.note}</span>` : ''}</td>
-      <td>${s.color}</td>
-      <td style="text-align:center">${s.quantity}</td>
-      <td>${fmt(s.pricePerUnit)}</td>
-      <td style="font-weight:700">${fmt(s.total)}</td>
-      <td style="white-space:nowrap">
-        <button class="btn-icon" data-edit-sale="${s.id}" title="Editar">✏️</button>
-        <button class="btn-icon" data-delete-sale="${s.id}" title="Eliminar" style="color:#e06c75">✕</button>
-      </td>
-    </tr>`).join('')}</tbody>
+    <tbody>${sales.map(s => {
+      const isPack = s.type === 'pack';
+      const nameLine = isPack
+        ? `📦 ${s.productName}`
+        : s.productName;
+      const subLine = s.note
+        ? `<br><span style="font-size:.76rem;color:var(--c-text-soft);font-style:italic">${s.note}</span>`
+        : '';
+      const colorLine = isPack
+        ? `<span style="font-size:.76rem;color:var(--c-text-soft)">${s.packCharmQty} charms${s.packItems?.length ? ' + otros' : ''}</span>`
+        : s.color;
+      const actions = isPack
+        ? `<button class="btn-icon" data-delete-sale="${s.id}" title="Eliminar" style="color:#e06c75">✕</button>`
+        : `<button class="btn-icon" data-edit-sale="${s.id}" title="Editar">✏️</button>
+           <button class="btn-icon" data-delete-sale="${s.id}" title="Eliminar" style="color:#e06c75">✕</button>`;
+      return `<tr>
+        <td style="white-space:nowrap">${fmtDate(s.date)}</td>
+        <td>${nameLine}${subLine}</td>
+        <td>${colorLine}</td>
+        <td style="text-align:center">${s.quantity}</td>
+        <td>${fmt(s.pricePerUnit)}</td>
+        <td style="font-weight:700">${fmt(s.total)}</td>
+        <td style="white-space:nowrap">${actions}</td>
+      </tr>`;
+    }).join('')}</tbody>
   </table>`;
 }
 
@@ -2474,17 +2526,15 @@ function initEventListeners() {
 
   /* ── Pack modal: sell / delete template (delegation) ── */
   document.getElementById('pack-templates-list').addEventListener('click', e => {
-    // Sell
+    // Sell → go to sell-confirm view
     const sellBtn = e.target.closest('[data-sell-template]');
     if (sellBtn) {
       const t = getPackTemplates().find(t => t.id === sellBtn.dataset.sellTemplate);
       if (!t) return;
-      // Validate pool
       if (t.charmQty > (window._packPoolAvail || 0)) {
-        showToast(`No hay suficientes charms disponibles (${window._packPoolAvail} disponibles, pack necesita ${t.charmQty})`);
+        showToast(`Solo hay ${window._packPoolAvail} charms disponibles — este pack necesita ${t.charmQty}.`);
         return;
       }
-      // Validate extra items stock
       const products = getProducts();
       let stockOK = true;
       (t.items || []).forEach(item => {
@@ -2493,20 +2543,7 @@ function initEventListeners() {
         if (!c || colorAvailable(c) < item.quantity) stockOK = false;
       });
       if (!stockOK) { showToast('Stock insuficiente para uno o más productos del pack.'); return; }
-
-      showConfirm(
-        `¿Registrar venta del pack "${t.name}"?`,
-        () => {
-          addPack({ category: t.category, charmQty: t.charmQty, items: t.items, packPrice: t.price, note: t.name });
-          window._packPoolAvail = (window._packPoolAvail || 0) - t.charmQty;
-          document.getElementById('pack-pool-avail').textContent = window._packPoolAvail;
-          renderProductGrid();
-                    renderBalance();
-          renderPackTemplateList(window._packCategory || '');
-          showToast(`Pack "${t.name}" vendido ✓`);
-        },
-        { title: 'Vender pack', okLabel: '✓ Vender' }
-      );
+      _showPackSellView(t);
       return;
     }
 
@@ -2521,6 +2558,26 @@ function initEventListeners() {
         showToast(`Pack "${t.name}" eliminado`);
       }, { title: 'Eliminar pack', okLabel: 'Sí, eliminar' });
     }
+  });
+
+  /* ── Pack sell confirm view ── */
+  document.getElementById('btn-cancel-sell-pack').addEventListener('click', () => {
+    _showPackListView();
+    renderPackTemplateList(window._packCategory || '');
+  });
+  document.getElementById('btn-confirm-sell-pack').addEventListener('click', () => {
+    const t = window._sellPackTemplate;
+    if (!t) return;
+    const note = document.getElementById('sell-pack-note').value;
+    recordPackSale(t, note);
+    window._packPoolAvail = (window._packPoolAvail || 0) - t.charmQty;
+    document.getElementById('pack-pool-avail').textContent = window._packPoolAvail;
+    renderProductGrid();
+    renderVentasHistory();
+    renderBalance();
+    _showPackListView();
+    renderPackTemplateList(window._packCategory || '');
+    showToast(`Pack "${t.name}" vendido ✓`);
   });
 
   /* ── Category contents modal: remove from category ── */
