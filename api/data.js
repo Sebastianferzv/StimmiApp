@@ -1,6 +1,6 @@
 const { neon } = require('@neondatabase/serverless');
 
-const ALLOWED_KEYS = ['stimmi_products', 'stimmi_purchases', 'stimmi_sales'];
+const ALLOWED_KEYS = ['stimmi_products', 'stimmi_purchases', 'stimmi_sales', 'stimmi_categories', 'stimmi_packs'];
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
