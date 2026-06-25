@@ -764,16 +764,34 @@ tbody tr:hover td { background: #faf6ff; }
 <div class="modal" id="modal-pack-sale">
   <div class="modal__box">
     <div class="modal__header">
-      <span class="modal__title">Packs — <span id="pack-cat-name"></span></span>
+      <span class="modal__title" id="pack-cat-name"></span>
       <button class="modal__close" data-close>✕</button>
     </div>
-    <!-- Info row -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:.5rem;flex-wrap:wrap">
+    <!-- Image -->
+    <div class="detail-img-wrap" id="cat-img-wrap" style="height:160px;margin-bottom:1rem">
+      <img id="cat-img" src="" alt="" onerror="this.src='/icon.svg'">
+      <div class="detail-img-overlay">📷 Cambiar imagen</div>
+    </div>
+    <input type="file" id="cat-img-file" accept="image/*" style="display:none">
+    <!-- Stats -->
+    <div class="sell-info" style="margin-bottom:1rem">
       <div class="sell-info-block">
-        <label>Disponibles en pool</label>
+        <label>En inventario</label>
         <strong id="pack-pool-avail">—</strong>
       </div>
-      <button type="button" class="btn btn-ghost btn-sm" id="btn-pack-view-contents">📋 Ver contenido de la carpeta</button>
+      <div class="sell-info-block">
+        <label>Reservados</label>
+        <strong id="pack-pool-reserved">—</strong>
+      </div>
+      <div class="sell-info-block">
+        <label>Vendidos</label>
+        <strong id="pack-pool-sold">—</strong>
+      </div>
+    </div>
+    <!-- Action buttons -->
+    <div style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap">
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-pack-reservations">🔖 Reservas</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-pack-view-contents">📋 Ver contenido</button>
     </div>
 
     <!-- Vista: lista de packs -->
@@ -1523,6 +1541,44 @@ function categoryCharmsSold(catName) {
   return getSales().filter(s => s.type === 'pack' && s.packCategory === catName)
     .reduce((sum, s) => sum + (s.packCharmQty || 0), 0);
 }
+function getCategoryReservations(catName) {
+  const cat = getCategories().find(c => c.name === catName);
+  return cat?.reservations || [];
+}
+function getCategoryReservedCount(catName) {
+  return getCategoryReservations(catName).reduce((s, r) => s + r.quantity, 0);
+}
+function addCategoryReservation(catName, personName, quantity) {
+  const cats = getCategories();
+  let cat = cats.find(c => c.name === catName);
+  if (!cat) { cat = { name: catName, imageUrl: '' }; cats.push(cat); }
+  if (!cat.reservations) cat.reservations = [];
+  cat.reservations.push({ id: genId(), personName, quantity, date: new Date().toISOString() });
+  saveCategories(cats);
+}
+function removeCategoryReservation(catName, reservationId) {
+  const cats = getCategories();
+  const cat = cats.find(c => c.name === catName);
+  if (cat?.reservations) {
+    cat.reservations = cat.reservations.filter(r => r.id !== reservationId);
+    saveCategories(cats);
+  }
+}
+function categoryPoolStats(catName) {
+  const products = getProducts();
+  const catProds = products.filter(p => p.category === catName);
+  const total    = catProds.flatMap(p => p.colors).reduce((s, c) => s + (c.total || 0), 0);
+  const sold     = categoryCharmsSold(catName);
+  const reserved = getCategoryReservedCount(catName);
+  return { total, sold, reserved, available: Math.max(0, total - sold - reserved) };
+}
+function updateCategoryImage(catName, imageUrl) {
+  const cats = getCategories();
+  let cat = cats.find(c => c.name === catName);
+  if (!cat) { cat = { name: catName, imageUrl: '' }; cats.push(cat); }
+  cat.imageUrl = imageUrl;
+  saveCategories(cats);
+}
 
 /* ── Formatters ── */
 const fmt = n => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
@@ -1554,18 +1610,17 @@ function _productCard(p) {
 }
 
 function _categoryCard(catName, products, categories) {
-  const catMeta  = categories.find(c => c.name === catName) || { imageUrl: '' };
+  const catMeta = categories.find(c => c.name === catName) || { imageUrl: '' };
   const catProds = products.filter(p => p.category === catName);
   const img      = catMeta.imageUrl || catProds.find(p => p.imageUrl)?.imageUrl || PLACEHOLDER;
-  const avail    = catProds.reduce((s, p) => s + productAvailable(p), 0);
-  const sold     = categoryCharmsSold(catName);
+  const stats    = categoryPoolStats(catName);
   return `<div class="product-card category-card" data-category="${catName}">
     <img class="product-card__img" src="${img}" alt="${catName}" onerror="this.src='${PLACEHOLDER}'">
     <div class="product-card__body">
       <div class="product-card__name" title="${catName}">${catName}</div>
       <div class="product-card__stats">
-        <div class="stat"><label>Disponibles</label><strong>${avail}</strong></div>
-        <div class="stat"><label>Vendidos</label><strong>${sold}</strong></div>
+        <div class="stat"><label>En inventario</label><strong>${stats.available}</strong></div>
+        <div class="stat"><label>Vendidos</label><strong>${stats.sold}</strong></div>
       </div>
     </div>
   </div>`;
@@ -1591,15 +1646,46 @@ function renderProductGrid() {
 
 /* ── Pack modal ── */
 function renderPackModal(categoryName) {
-  const products = getProducts();
-  const catProds = products.filter(p => p.category === categoryName);
-  const avail    = catProds.reduce((s, p) => s + productAvailable(p), 0);
-  document.getElementById('pack-cat-name').textContent   = categoryName;
-  document.getElementById('pack-pool-avail').textContent = avail;
+  const cats    = getCategories();
+  const catMeta = cats.find(c => c.name === categoryName) || { imageUrl: '' };
+  const img     = catMeta.imageUrl || getProducts().find(p => p.category === categoryName)?.imageUrl || PLACEHOLDER;
+  const stats   = categoryPoolStats(categoryName);
+  document.getElementById('pack-cat-name').textContent      = categoryName;
+  document.getElementById('cat-img').src                    = img;
+  document.getElementById('pack-pool-avail').textContent    = stats.available;
+  document.getElementById('pack-pool-reserved').textContent = stats.reserved;
+  document.getElementById('pack-pool-sold').textContent     = stats.sold;
   window._packCategory  = categoryName;
-  window._packPoolAvail = avail;
+  window._packPoolAvail = stats.available;
   _showPackListView();
   renderPackTemplateList(categoryName);
+}
+
+function renderCategoryReservationsModal(catName) {
+  window._resCategoryMode = true;
+  window._resCategory     = catName;
+  const stats = categoryPoolStats(catName);
+  document.getElementById('reservations-title').textContent = `Reservas — ${catName}`;
+  document.getElementById('res-person').value = '';
+  document.getElementById('res-qty').value    = '1';
+  document.getElementById('res-error').classList.remove('show');
+  const reservations = getCategoryReservations(catName);
+  const list = document.getElementById('reservations-list');
+  if (!reservations.length) {
+    list.innerHTML = '<div class="reservations-empty">Sin reservas aún.</div>';
+  } else {
+    list.innerHTML = reservations.map(r => `
+      <div class="reservation-row">
+        <span class="res-name">${r.personName}</span>
+        <span class="res-qty">${r.quantity} ud${r.quantity > 1 ? 's' : ''}</span>
+        <span class="res-date">${fmtDate(r.date)}</span>
+        <button class="btn-icon" data-cancel-res="${r.id}" title="Cancelar reserva">✕</button>
+      </div>`).join('');
+  }
+  const hint = document.createElement('p');
+  hint.style.cssText = 'font-size:.78rem;color:var(--c-text-soft);margin-bottom:.5rem;text-align:right';
+  hint.textContent = `En inventario: ${stats.available}`;
+  list.prepend(hint);
 }
 
 function _showPackListView() {
@@ -1862,6 +1948,7 @@ function updateEditStockBalance(totalStock) {
 }
 
 function renderReservationsModal(productId, colorName, opts = {}) {
+  window._resCategoryMode      = false;
   window._reservationProductId = productId;
   window._reservationColorName = colorName;
   window._reservationOpts      = opts;
@@ -2497,6 +2584,29 @@ function initEventListeners() {
     openModal('modal-category-contents');
   });
 
+  document.getElementById('btn-pack-reservations').addEventListener('click', () => {
+    renderCategoryReservationsModal(window._packCategory || '');
+    openModal('modal-reservations');
+  });
+
+  document.getElementById('cat-img-wrap').addEventListener('click', () => {
+    const fi = document.getElementById('cat-img-file');
+    fi.value = '';
+    fi.onchange = () => {
+      const file = fi.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const url = ev.target.result;
+        updateCategoryImage(window._packCategory, url);
+        document.getElementById('cat-img').src = url;
+        renderProductGrid();
+      };
+      reader.readAsDataURL(file);
+    };
+    fi.click();
+  });
+
   /* ── Pack modal: create template ── */
   document.getElementById('form-create-pack').addEventListener('submit', e => {
     e.preventDefault();
@@ -2570,8 +2680,11 @@ function initEventListeners() {
     if (!t) return;
     const note = document.getElementById('sell-pack-note').value;
     recordPackSale(t, note);
-    window._packPoolAvail = (window._packPoolAvail || 0) - t.charmQty;
-    document.getElementById('pack-pool-avail').textContent = window._packPoolAvail;
+    const _ps = categoryPoolStats(window._packCategory);
+    window._packPoolAvail = _ps.available;
+    document.getElementById('pack-pool-avail').textContent    = _ps.available;
+    document.getElementById('pack-pool-reserved').textContent = _ps.reserved;
+    document.getElementById('pack-pool-sold').textContent     = _ps.sold;
     renderProductGrid();
     renderVentasHistory();
     renderBalance();
@@ -2721,13 +2834,27 @@ function initEventListeners() {
 
   /* ── Reservations: add ── */
   document.getElementById('btn-res-add').addEventListener('click', () => {
-    const pid      = window._reservationProductId;
-    const color    = window._reservationColorName;
-    const person   = document.getElementById('res-person').value.trim();
-    const qty      = parseInt(document.getElementById('res-qty').value) || 0;
-    const errEl    = document.getElementById('res-error');
+    const person = document.getElementById('res-person').value.trim();
+    const qty    = parseInt(document.getElementById('res-qty').value) || 0;
+    const errEl  = document.getElementById('res-error');
     if (!person) { errEl.textContent = 'Ingresa el nombre de quien reserva.'; errEl.classList.add('show'); return; }
     if (qty < 1)  { errEl.textContent = 'La cantidad debe ser al menos 1.';   errEl.classList.add('show'); return; }
+    errEl.classList.remove('show');
+
+    if (window._resCategoryMode) {
+      addCategoryReservation(window._resCategory, person, qty);
+      renderCategoryReservationsModal(window._resCategory);
+      const _rs = categoryPoolStats(window._resCategory);
+      document.getElementById('pack-pool-avail').textContent    = _rs.available;
+      document.getElementById('pack-pool-reserved').textContent = _rs.reserved;
+      window._packPoolAvail = _rs.available;
+      renderProductGrid();
+      showToast(`Reserva de ${person} registrada ✓`);
+      return;
+    }
+
+    const pid   = window._reservationProductId;
+    const color = window._reservationColorName;
     const p = getProductById(pid);
     const c = p?.colors.find(c => c.name === color);
     const maxReservable = window._reservationMax !== null ? window._reservationMax : colorAvailable(c);
@@ -2737,7 +2864,6 @@ function initEventListeners() {
         : `Solo hay ${maxReservable} unidades disponibles en inventario.`;
       errEl.classList.add('show'); return;
     }
-    errEl.classList.remove('show');
     addReservation(pid, color, person, qty);
     renderReservationsModal(pid, color, _refreshedReservationOpts(pid, color));
     renderProductGrid();
@@ -2750,6 +2876,19 @@ function initEventListeners() {
   document.getElementById('reservations-list').addEventListener('click', e => {
     const btn = e.target.closest('[data-cancel-res]');
     if (!btn) return;
+
+    if (window._resCategoryMode) {
+      removeCategoryReservation(window._resCategory, btn.dataset.cancelRes);
+      renderCategoryReservationsModal(window._resCategory);
+      const _rs = categoryPoolStats(window._resCategory);
+      document.getElementById('pack-pool-avail').textContent    = _rs.available;
+      document.getElementById('pack-pool-reserved').textContent = _rs.reserved;
+      window._packPoolAvail = _rs.available;
+      renderProductGrid();
+      showToast('Reserva cancelada');
+      return;
+    }
+
     const pid   = window._reservationProductId;
     const color = window._reservationColorName;
     removeReservation(pid, color, btn.dataset.cancelRes);
