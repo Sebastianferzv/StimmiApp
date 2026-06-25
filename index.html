@@ -645,13 +645,6 @@ tbody tr:hover td { background: #faf6ff; }
         </div>
       </div>
 
-      <!-- Historial packs -->
-      <div class="finanzas-card">
-        <div class="finanzas-card__header"><h3>📦 Packs vendidos</h3></div>
-        <div class="finanzas-card__body">
-          <div class="history-table-wrap" id="packs-history"></div>
-        </div>
-      </div>
 
     </div>
   </section>
@@ -1185,8 +1178,7 @@ function clearAllData() {
     renderTransitTab();
     renderComprasHistory();
     renderVentasHistory();
-    renderPacksHistory();
-    renderBalance();
+        renderBalance();
     resetPurchaseForm();
     showToast('Datos eliminados');
   }, { title: 'Borrar datos', okLabel: 'Sí, borrar todo' });
@@ -1443,7 +1435,7 @@ function removeReservation(productId, colorName, reservationId) {
 }
 function productTotalSold(p)     { return p.colors.reduce((s, c) => s + (c.sold || 0), 0); }
 function totalSpent()            { return getPurchases().reduce((s, p) => s + p.total, 0); }
-function totalEarned()           { return getSales().reduce((s, s2) => s + s2.total, 0) + getPacks().reduce((s, pk) => s + (pk.packPrice || 0), 0); }
+function totalEarned()           { return getSales().reduce((s, s2) => s + s2.total, 0); }
 
 /* ── Data: Categories ── */
 function getCategories()     { return load(KEYS.categories); }
@@ -1662,28 +1654,6 @@ function renderCategoryContents(categoryName) {
       <button class="btn btn-ghost btn-sm" data-remove-from-cat="${p.id}" style="flex-shrink:0;color:var(--c-danger)">Quitar</button>
     </div>`;
   }).join('');
-}
-
-function renderPacksHistory() {
-  const packs = getPacks().slice().reverse();
-  const el = document.getElementById('packs-history');
-  if (!el) return;
-  if (!packs.length) { el.innerHTML = '<div class="history-empty">Sin packs vendidos aún.</div>'; return; }
-  el.innerHTML = `<table>
-    <thead><tr><th>Fecha</th><th>Categoría</th><th>Charms</th><th>Otros ítems</th><th>Total</th></tr></thead>
-    <tbody>${packs.map(pk => {
-      const extra = pk.items && pk.items.length
-        ? pk.items.map(i => `${i.productName} (${i.colorName}) ×${i.quantity}`).join('<br>')
-        : '—';
-      return `<tr>
-        <td style="white-space:nowrap">${fmtDate(pk.date)}</td>
-        <td>${pk.category}${pk.note ? `<br><span style="font-size:.76rem;color:var(--c-text-soft);font-style:italic">${pk.note}</span>` : ''}</td>
-        <td style="text-align:center">${pk.charmQty}</td>
-        <td style="font-size:.82rem">${extra}</td>
-        <td style="font-weight:700;white-space:nowrap">${fmt(pk.packPrice)}</td>
-      </tr>`;
-    }).join('')}</tbody>
-  </table>`;
 }
 
 function renderProductDetail(productId) {
@@ -2392,7 +2362,7 @@ function initEventListeners() {
       document.getElementById('tab-inventario').style.display = tab === 'inventario' ? '' : 'none';
       document.getElementById('tab-transito').style.display   = tab === 'transito'   ? '' : 'none';
       document.getElementById('tab-finanzas').style.display   = tab === 'finanzas'   ? '' : 'none';
-      if (tab === 'finanzas') { renderComprasHistory(); renderVentasHistory(); renderPacksHistory(); renderBalance(); }
+      if (tab === 'finanzas') { renderComprasHistory(); renderVentasHistory(); renderBalance(); }
       if (tab === 'transito') { renderTransitTab(); }
     });
   });
@@ -2531,8 +2501,7 @@ function initEventListeners() {
           window._packPoolAvail = (window._packPoolAvail || 0) - t.charmQty;
           document.getElementById('pack-pool-avail').textContent = window._packPoolAvail;
           renderProductGrid();
-          renderPacksHistory();
-          renderBalance();
+                    renderBalance();
           renderPackTemplateList(window._packCategory || '');
           showToast(`Pack "${t.name}" vendido ✓`);
         },
@@ -3044,8 +3013,7 @@ async function init() {
   renderProductGrid();
   renderTransitTab();
   renderBalance();
-  renderPacksHistory();
-  initEventListeners();
+    initEventListeners();
 
   // Register service worker for PWA
   if ('serviceWorker' in navigator) {
