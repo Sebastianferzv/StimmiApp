@@ -1620,7 +1620,7 @@ function renderComprasHistory() {
       const extras = [];
       if (p.shipping > 0) extras.push(`Envío ${fmt(p.shipping)}`);
       if (p.customs  > 0) extras.push(`Aduana ${fmt(p.customs)}`);
-      const itemsSummary = p.items.map(i => `${i.productName} (${i.colorName}) ×${i.quantity}`).join('<br>');
+      const itemsSummary = p.items.map(i => `${i.productName} (${i.colorName}) ×${i.quantity} — <span style="color:var(--c-text-soft)">${fmt(i.unitCost)} c/u</span>`).join('<br>');
       const statusBadge  = isTransit
         ? `<span class="badge-transit">🚚 En tránsito</span>`
         : `<span class="badge-received">✓ Recibido</span>`;
