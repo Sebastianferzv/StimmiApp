@@ -207,6 +207,35 @@ main { padding: 2rem; max-width: 1200px; margin: 0 auto; }
 }
 .stat strong { font-size: 1.1rem; font-weight: 700; line-height: 1.3; }
 
+/* ── Category folder cards ── */
+.category-folder {
+  background: var(--c-white);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: transform .18s, box-shadow .18s, border-color .18s;
+  overflow: hidden;
+  border: 1.5px solid transparent;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  min-height: 150px;
+}
+.category-folder:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 28px rgba(107,79,160,.16);
+  border-color: var(--c-primary);
+}
+.category-folder__icon { font-size: 2.5rem; line-height: 1; margin-bottom: .4rem; }
+.category-folder__name { font-size: 1rem; font-weight: 700; color: var(--c-text); margin-bottom: .25rem; }
+.category-folder__meta { font-size: .78rem; color: var(--c-text-soft); }
+.category-breadcrumb {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: .75rem;
+  margin-bottom: .25rem; font-size: .9rem; font-weight: 600; color: var(--c-text);
+}
+
 /* ── Empty state ────────────────────────────────────────────── */
 .empty-state {
   text-align: center; padding: 4rem 2rem; color: var(--c-text-soft);
@@ -524,6 +553,7 @@ tbody tr:hover td { background: #faf6ff; }
   <section id="tab-inventario">
     <div class="tab-header">
       <h2>Inventario</h2>
+      <button class="btn btn-primary btn-sm" id="btn-new-product-inventory">+ Nuevo producto</button>
     </div>
     <div id="product-grid" class="product-grid"></div>
     <div id="empty-inventory" class="empty-state" style="display:none">
@@ -643,6 +673,11 @@ tbody tr:hover td { background: #faf6ff; }
         <input type="text" id="ap-name" placeholder="Ej: Polera estampada" required>
         <div class="field-error" id="ap-name-err">Ingresa el nombre del producto.</div>
       </div>
+      <div class="form-group">
+        <label>Categoría <span style="font-weight:400;color:var(--c-text-soft)">(opcional)</span></label>
+        <input type="text" id="ap-category" placeholder="Ej: Charms" list="ap-category-list">
+        <datalist id="ap-category-list"></datalist>
+      </div>
       <div style="border-top:1.5px solid var(--c-bg);margin:.75rem 0;padding-top:.75rem">
         <p style="font-size:.82rem;font-weight:600;color:var(--c-text-soft);margin-bottom:.6rem">Color / variante <span style="font-weight:400">(opcional — si no hay variantes déjalo vacío)</span></p>
         <div class="form-group">
@@ -698,9 +733,16 @@ tbody tr:hover td { background: #faf6ff; }
           <input type="number" id="ep-price" min="0" placeholder="0">
         </div>
       </div>
-      <div class="form-group">
-        <label>Link de compra (opcional)</label>
-        <input type="url" id="ep-source" placeholder="https://...">
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label>Link de compra (opcional)</label>
+          <input type="url" id="ep-source" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label>Categoría <span style="font-weight:400;color:var(--c-text-soft)">(opcional)</span></label>
+          <input type="text" id="ep-category" placeholder="Ej: Charms" list="ep-category-list">
+          <datalist id="ep-category-list"></datalist>
+        </div>
       </div>
 
       <div style="border-top:1.5px solid var(--c-bg);margin:.75rem 0;padding-top:.75rem">
@@ -1080,11 +1122,12 @@ function getProducts()     { return load(KEYS.products); }
 function saveProducts(arr) { save(KEYS.products, arr); }
 function getProductById(id){ return getProducts().find(p => p.id === id); }
 
-function addProduct({ name, imageUrl, price, firstColor, sourceUrl }) {
+function addProduct({ name, imageUrl, price, firstColor, sourceUrl, category }) {
   const p = {
     id: genId(), name, imageUrl: imageUrl || '',
     price: parseFloat(price) || 0,
     sourceUrl: sourceUrl || '',
+    category: category || '',
     colors: [{ name: firstColor?.trim() || 'Única', total: 0, reserved: 0, sold: 0 }]
   };
   const arr = getProducts();
@@ -1099,7 +1142,7 @@ function updateProductImage(productId, url) {
   if (p) { p.imageUrl = url; saveProducts(arr); }
 }
 
-function updateProduct(productId, { name, price, imageUrl, sourceUrl, colorTotals }) {
+function updateProduct(productId, { name, price, imageUrl, sourceUrl, category, colorTotals }) {
   const arr = getProducts();
   const p = arr.find(p => p.id === productId);
   if (!p) return;
@@ -1107,6 +1150,7 @@ function updateProduct(productId, { name, price, imageUrl, sourceUrl, colorTotal
   p.price     = parseFloat(price) || 0;
   p.imageUrl  = imageUrl  || '';
   p.sourceUrl = sourceUrl || '';
+  p.category  = category  || '';
   if (colorTotals) {
     colorTotals.forEach(({ colorName, total }) => {
       const c = p.colors.find(c => c.name === colorName);
@@ -1330,6 +1374,24 @@ const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
    RENDER FUNCTIONS
    ================================================================ */
 
+function _productCard(p) {
+  const avail    = productAvailable(p);
+  const reserved = productTotalReserved(p);
+  const sold     = productTotalSold(p);
+  const img      = p.imageUrl || PLACEHOLDER;
+  return `<div class="product-card" data-id="${p.id}">
+    <img class="product-card__img" src="${img}" alt="${p.name}" onerror="this.src='${PLACEHOLDER}'">
+    <div class="product-card__body">
+      <div class="product-card__name" title="${p.name}">${p.name}</div>
+      <div class="product-card__stats">
+        <div class="stat"><label>En inventario</label><strong>${avail}</strong></div>
+        <div class="stat"><label>Reservados</label><strong>${reserved}</strong></div>
+        <div class="stat"><label>Vendidos</label><strong>${sold}</strong></div>
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderProductGrid() {
   const products = getProducts();
   const grid  = document.getElementById('product-grid');
@@ -1338,23 +1400,34 @@ function renderProductGrid() {
     grid.style.display = 'none'; empty.style.display = 'block'; return;
   }
   grid.style.display = ''; empty.style.display = 'none';
-  grid.innerHTML = products.map(p => {
-    const avail    = productAvailable(p);
-    const reserved = productTotalReserved(p);
-    const sold     = productTotalSold(p);
-    const img      = p.imageUrl || PLACEHOLDER;
-    return `<div class="product-card" data-id="${p.id}">
-      <img class="product-card__img" src="${img}" alt="${p.name}" onerror="this.src='${PLACEHOLDER}'">
-      <div class="product-card__body">
-        <div class="product-card__name" title="${p.name}">${p.name}</div>
-        <div class="product-card__stats">
-          <div class="stat"><label>En inventario</label><strong>${avail}</strong></div>
-          <div class="stat"><label>Reservados</label><strong>${reserved}</strong></div>
-          <div class="stat"><label>Vendidos</label><strong>${sold}</strong></div>
-        </div>
-      </div>
+
+  const activeCategory = window._activeCategory || null;
+
+  if (activeCategory !== null) {
+    const catProducts = products.filter(p => (p.category || '') === activeCategory);
+    const backBar = `<div class="category-breadcrumb">
+      <button class="btn btn-ghost btn-sm" id="btn-back-category">← Volver</button>
+      <span>📁 ${activeCategory}</span>
+    </div>`;
+    grid.innerHTML = backBar + catProducts.map(_productCard).join('');
+    return;
+  }
+
+  // Root view: category folders + uncategorized products
+  const categories = [...new Set(products.filter(p => p.category).map(p => p.category))];
+  const uncategorized = products.filter(p => !p.category);
+
+  const folderCards = categories.map(cat => {
+    const catProds = products.filter(p => p.category === cat);
+    const totalAvail = catProds.reduce((s, p) => s + productAvailable(p), 0);
+    return `<div class="category-folder" data-category="${cat}">
+      <div class="category-folder__icon">📁</div>
+      <div class="category-folder__name">${cat}</div>
+      <div class="category-folder__meta">${catProds.length} producto${catProds.length !== 1 ? 's' : ''} · ${totalAvail} disponibles</div>
     </div>`;
   }).join('');
+
+  grid.innerHTML = folderCards + uncategorized.map(_productCard).join('');
 }
 
 function renderProductDetail(productId) {
@@ -1447,9 +1520,14 @@ function renderEditModal(productId) {
   thumb.src = p.imageUrl || PLACEHOLDER;
   thumb.onerror = () => { thumb.src = PLACEHOLDER; };
   window._epImageB64 = p.imageUrl || '';
-  document.getElementById('ep-name').value   = p.name;
-  document.getElementById('ep-price').value  = p.price || '';
-  document.getElementById('ep-source').value = p.sourceUrl || '';
+  document.getElementById('ep-name').value     = p.name;
+  document.getElementById('ep-price').value    = p.price || '';
+  document.getElementById('ep-source').value   = p.sourceUrl || '';
+  document.getElementById('ep-category').value = p.category || '';
+  // Populate category datalist
+  const cats = [...new Set(getProducts().filter(x => x.category).map(x => x.category))];
+  const dl = document.getElementById('ep-category-list');
+  dl.innerHTML = cats.map(c => `<option value="${c}">`).join('');
   document.getElementById('ep-new-color').value = '';
   document.getElementById('ep-color-err').classList.remove('show');
   document.getElementById('ep-name-err').classList.remove('show');
@@ -1818,6 +1896,8 @@ function addPurchaseItemRow() {
       window._pendingNewProductRow = rowId;
       document.getElementById('form-add-product').reset();
       document.querySelectorAll('#modal-add-product .field-error').forEach(el => el.classList.remove('show'));
+      const apCats = [...new Set(getProducts().filter(x => x.category).map(x => x.category))];
+      document.getElementById('ap-category-list').innerHTML = apCats.map(c => `<option value="${c}">`).join('');
       this.value = '';
       openModal('modal-add-product');
       return;
@@ -1942,6 +2022,8 @@ function addEditPurchaseRow(prefill) {
       window._pendingNewProductRow = rowId;
       document.getElementById('form-add-product').reset();
       document.querySelectorAll('#modal-add-product .field-error').forEach(el => el.classList.remove('show'));
+      const apCats = [...new Set(getProducts().filter(x => x.category).map(x => x.category))];
+      document.getElementById('ap-category-list').innerHTML = apCats.map(c => `<option value="${c}">`).join('');
       this.value = '';
       openModal('modal-add-product');
       return;
@@ -2078,12 +2160,13 @@ function initEventListeners() {
   /* ── Add product form submit (triggered from purchase) ── */
   document.getElementById('form-add-product').addEventListener('submit', e => {
     e.preventDefault();
-    const name  = document.getElementById('ap-name').value.trim();
-    const color = document.getElementById('ap-color').value.trim();
+    const name     = document.getElementById('ap-name').value.trim();
+    const color    = document.getElementById('ap-color').value.trim();
+    const category = document.getElementById('ap-category').value.trim();
     if (!name) { document.getElementById('ap-name-err').classList.add('show'); return; }
     document.getElementById('ap-name-err').classList.remove('show');
 
-    const newProduct = addProduct({ name, imageUrl: '', price: 0, firstColor: color, sourceUrl: '' });
+    const newProduct = addProduct({ name, imageUrl: '', price: 0, firstColor: color, sourceUrl: '', category });
     refreshPurchaseProductSelects();
 
     if (window._pendingNewProductRow) {
@@ -2103,11 +2186,35 @@ function initEventListeners() {
 
   /* ── Product grid click ── */
   document.getElementById('product-grid').addEventListener('click', e => {
+    // Back button inside a category
+    if (e.target.closest('#btn-back-category')) {
+      window._activeCategory = null;
+      renderProductGrid();
+      return;
+    }
+    // Category folder
+    const folder = e.target.closest('.category-folder');
+    if (folder) {
+      window._activeCategory = folder.dataset.category;
+      renderProductGrid();
+      return;
+    }
+    // Product card
     const card = e.target.closest('.product-card');
     if (!card) return;
     window._currentProductId = card.dataset.id;
     renderProductDetail(card.dataset.id);
     openModal('modal-product-detail');
+  });
+
+  /* ── New product button in inventory header ── */
+  document.getElementById('btn-new-product-inventory').addEventListener('click', () => {
+    document.getElementById('form-add-product').reset();
+    document.querySelectorAll('#modal-add-product .field-error').forEach(el => el.classList.remove('show'));
+    const apCats = [...new Set(getProducts().filter(x => x.category).map(x => x.category))];
+    document.getElementById('ap-category-list').innerHTML = apCats.map(c => `<option value="${c}">`).join('');
+    window._pendingNewProductRow = null;
+    openModal('modal-add-product');
   });
 
   /* ── Edit product button (opens edit modal) ── */
@@ -2154,6 +2261,7 @@ function initEventListeners() {
       price:       document.getElementById('ep-price').value,
       imageUrl:    window._epImageB64 || '',
       sourceUrl:   document.getElementById('ep-source').value.trim(),
+      category:    document.getElementById('ep-category').value.trim(),
       colorTotals: colorTotals.length ? colorTotals : undefined,
     });
     renderProductGrid();
