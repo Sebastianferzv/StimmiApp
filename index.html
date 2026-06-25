@@ -207,6 +207,16 @@ main { padding: 2rem; max-width: 1200px; margin: 0 auto; }
 }
 .stat strong { font-size: 1.1rem; font-weight: 700; line-height: 1.3; }
 
+/* ── Pack template list ── */
+.pack-template-item {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .7rem .5rem; border-bottom: 1px solid var(--c-bg);
+}
+.pack-template-item:last-child { border-bottom: none; }
+.pack-template-info { flex: 1; min-width: 0; }
+.pack-template-name { font-weight: 600; font-size: .9rem; }
+.pack-template-meta { font-size: .76rem; color: var(--c-text-soft); margin-top: .1rem; }
+
 /* ── Category card badge ── */
 .category-card { position: relative; }
 .category-card::after {
@@ -757,47 +767,59 @@ tbody tr:hover td { background: #faf6ff; }
   </div>
 </div>
 
-<!-- ── Modal: Vender pack ── -->
+<!-- ── Modal: Packs de categoría ── -->
 <div class="modal" id="modal-pack-sale">
   <div class="modal__box">
     <div class="modal__header">
-      <span class="modal__title">Vender pack — <span id="pack-cat-name"></span></span>
+      <span class="modal__title">Packs — <span id="pack-cat-name"></span></span>
       <button class="modal__close" data-close>✕</button>
     </div>
-    <div class="sell-info" style="margin-bottom:1rem">
+    <!-- Info row -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:.5rem;flex-wrap:wrap">
       <div class="sell-info-block">
         <label>Disponibles en pool</label>
         <strong id="pack-pool-avail">—</strong>
       </div>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-pack-view-contents">📋 Ver contenido de la carpeta</button>
     </div>
-    <form id="form-pack-sale" novalidate>
-      <div class="form-group">
-        <label>Charms en el pack</label>
-        <input type="number" id="pack-charm-qty" value="0" min="0">
-        <div class="field-error" id="pack-charm-err"></div>
+
+    <!-- Vista: lista de packs -->
+    <div id="pack-list-view">
+      <div id="pack-templates-list"></div>
+      <div class="form-actions" style="justify-content:space-between;margin-top:.75rem">
+        <button type="button" class="btn btn-ghost" data-close>Cerrar</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-show-create-pack">+ Crear pack</button>
       </div>
-      <div style="border-top:1.5px solid var(--c-bg);margin:.75rem 0;padding-top:.75rem">
-        <p style="font-size:.82rem;font-weight:600;color:var(--c-text-soft);margin-bottom:.6rem">Otros productos en el pack <span style="font-weight:400">(opcional)</span></p>
-        <div id="pack-items-list"></div>
-        <button type="button" class="btn btn-ghost btn-sm" id="btn-pack-add-item" style="margin-top:.4rem">+ Agregar producto</button>
-      </div>
-      <div class="form-group">
-        <label>Precio del pack (CLP)</label>
-        <input type="number" id="pack-price" min="0" placeholder="0">
-        <div class="field-error" id="pack-price-err"></div>
-      </div>
-      <div class="form-group">
-        <label>Comentario <span style="font-weight:400;color:var(--c-text-soft)">(opcional)</span></label>
-        <textarea id="pack-note" rows="2" style="resize:vertical" placeholder="Ej: pack regalo, cliente Laura…"></textarea>
-      </div>
-      <div class="form-actions" style="justify-content:space-between;flex-wrap:wrap;gap:.5rem">
-        <button type="button" class="btn btn-ghost btn-sm" id="btn-pack-view-contents">📋 Ver contenido de la carpeta</button>
-        <div style="display:flex;gap:.75rem">
-          <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
-          <button type="submit" class="btn btn-secondary">✓ Confirmar pack</button>
+    </div>
+
+    <!-- Vista: crear nuevo pack -->
+    <div id="pack-create-view" style="display:none">
+      <p style="font-size:.85rem;font-weight:600;color:var(--c-text);margin-bottom:.75rem">Nuevo pack</p>
+      <form id="form-create-pack" novalidate>
+        <div class="form-group">
+          <label>Nombre del pack *</label>
+          <input type="text" id="cp-name" placeholder="Ej: Pack estándar">
+          <div class="field-error" id="cp-name-err">Ingresa un nombre.</div>
         </div>
-      </div>
-    </form>
+        <div class="form-group">
+          <label>Charms en el pack</label>
+          <input type="number" id="cp-charm-qty" value="0" min="0">
+        </div>
+        <div style="border-top:1.5px solid var(--c-bg);margin:.75rem 0;padding-top:.75rem">
+          <p style="font-size:.82rem;font-weight:600;color:var(--c-text-soft);margin-bottom:.6rem">Otros productos <span style="font-weight:400">(opcional)</span></p>
+          <div id="pack-items-list"></div>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-pack-add-item" style="margin-top:.4rem">+ Agregar producto</button>
+        </div>
+        <div class="form-group">
+          <label>Precio del pack (CLP)</label>
+          <input type="number" id="cp-price" min="0" placeholder="0">
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="btn-cancel-create-pack">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar pack</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -1000,15 +1022,16 @@ tbody tr:hover td { background: #faf6ff; }
    ================================================================ */
 
 const KEYS = {
-  products:   'stimmi_products',
-  purchases:  'stimmi_purchases',
-  sales:      'stimmi_sales',
-  categories: 'stimmi_categories',
-  packs:      'stimmi_packs',
+  products:       'stimmi_products',
+  purchases:      'stimmi_purchases',
+  sales:          'stimmi_sales',
+  categories:     'stimmi_categories',
+  packs:          'stimmi_packs',
+  packTemplates:  'stimmi_pack_templates',
 };
 
 /* ── Storage helpers ── */
-let _mem = { stimmi_products: [], stimmi_purchases: [], stimmi_sales: [], stimmi_categories: [], stimmi_packs: [] };
+let _mem = { stimmi_products: [], stimmi_purchases: [], stimmi_sales: [], stimmi_categories: [], stimmi_packs: [], stimmi_pack_templates: [] };
 let storageOK = true;
 let _cloudOK = false;
 try { localStorage.setItem('__test__', '1'); localStorage.removeItem('__test__'); }
@@ -1048,12 +1071,13 @@ async function cloudPut(key, value) {
 async function initCloudData() {
   setCloudBtn('🔄', 'Conectando…');
   try {
-    const [products, purchases, sales, categories, packs] = await Promise.all([
+    const [products, purchases, sales, categories, packs, packTemplates] = await Promise.all([
       fetch('/api/data?key=' + KEYS.products).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
       fetch('/api/data?key=' + KEYS.purchases).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
       fetch('/api/data?key=' + KEYS.sales).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
       fetch('/api/data?key=' + KEYS.categories).then(r => r.ok ? r.json() : []).catch(() => []),
       fetch('/api/data?key=' + KEYS.packs).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('/api/data?key=' + KEYS.packTemplates).then(r => r.ok ? r.json() : []).catch(() => []),
     ]);
     _cloudOK = true;
 
@@ -1077,20 +1101,22 @@ async function initCloudData() {
         return;
       }
     }
-    _mem[KEYS.products]   = products;
-    _mem[KEYS.purchases]  = purchases;
-    _mem[KEYS.sales]      = sales;
-    _mem[KEYS.categories] = categories;
-    _mem[KEYS.packs]      = packs;
+    _mem[KEYS.products]      = products;
+    _mem[KEYS.purchases]     = purchases;
+    _mem[KEYS.sales]         = sales;
+    _mem[KEYS.categories]    = categories;
+    _mem[KEYS.packs]         = packs;
+    _mem[KEYS.packTemplates] = packTemplates;
     setCloudBtn('🌐', 'Conectado a Neon');
   } catch(e) {
     _cloudOK = false;
     if (storageOK) {
-      _mem[KEYS.products]   = JSON.parse(localStorage.getItem(KEYS.products)   || '[]');
-      _mem[KEYS.purchases]  = JSON.parse(localStorage.getItem(KEYS.purchases)  || '[]');
-      _mem[KEYS.sales]      = JSON.parse(localStorage.getItem(KEYS.sales)      || '[]');
-      _mem[KEYS.categories] = JSON.parse(localStorage.getItem(KEYS.categories) || '[]');
-      _mem[KEYS.packs]      = JSON.parse(localStorage.getItem(KEYS.packs)      || '[]');
+      _mem[KEYS.products]      = JSON.parse(localStorage.getItem(KEYS.products)      || '[]');
+      _mem[KEYS.purchases]     = JSON.parse(localStorage.getItem(KEYS.purchases)      || '[]');
+      _mem[KEYS.sales]         = JSON.parse(localStorage.getItem(KEYS.sales)          || '[]');
+      _mem[KEYS.categories]    = JSON.parse(localStorage.getItem(KEYS.categories)    || '[]');
+      _mem[KEYS.packs]         = JSON.parse(localStorage.getItem(KEYS.packs)          || '[]');
+      _mem[KEYS.packTemplates] = JSON.parse(localStorage.getItem(KEYS.packTemplates) || '[]');
     }
     setCloudBtn('☁️', 'Sin conexión a la nube — click para reintentar');
     console.warn('Cloud unavailable:', e.message);
@@ -1151,7 +1177,7 @@ async function importData(file) {
 
 function clearAllData() {
   showConfirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.', () => {
-    [KEYS.products, KEYS.purchases, KEYS.sales, KEYS.categories, KEYS.packs].forEach(k => {
+    [KEYS.products, KEYS.purchases, KEYS.sales, KEYS.categories, KEYS.packs, KEYS.packTemplates].forEach(k => {
       if (storageOK) localStorage.removeItem(k);
       else _mem[k] = [];
     });
@@ -1433,7 +1459,21 @@ function getCategoryMeta(name) {
   return getCategories().find(c => c.name === name) || { name, imageUrl: '', sold: 0 };
 }
 
-/* ── Data: Packs ── */
+/* ── Data: Pack Templates ── */
+function getPackTemplates()     { return load(KEYS.packTemplates); }
+function savePackTemplates(arr) { save(KEYS.packTemplates, arr); }
+function addPackTemplate({ name, category, charmQty, items, price }) {
+  const arr = getPackTemplates();
+  const t = { id: genId(), name: name.trim(), category, charmQty: parseInt(charmQty) || 0, items: items || [], price: parseFloat(price) || 0 };
+  arr.push(t);
+  savePackTemplates(arr);
+  return t;
+}
+function deletePackTemplate(id) {
+  savePackTemplates(getPackTemplates().filter(t => t.id !== id));
+}
+
+/* ── Data: Packs (sale records) ── */
 function getPacks()     { return load(KEYS.packs); }
 function savePacks(arr) { save(KEYS.packs, arr); }
 function addPack({ category, charmQty, items, packPrice, note }) {
@@ -1535,16 +1575,48 @@ function renderPackModal(categoryName) {
   const products = getProducts();
   const catProds = products.filter(p => p.category === categoryName);
   const avail    = catProds.reduce((s, p) => s + productAvailable(p), 0);
-  document.getElementById('pack-cat-name').textContent  = categoryName;
+  document.getElementById('pack-cat-name').textContent   = categoryName;
   document.getElementById('pack-pool-avail').textContent = avail;
-  document.getElementById('pack-charm-qty').value = 0;
-  document.getElementById('pack-price').value     = '';
-  document.getElementById('pack-note').value      = '';
-  document.getElementById('pack-charm-err').classList.remove('show');
-  document.getElementById('pack-price-err').classList.remove('show');
-  document.getElementById('pack-items-list').innerHTML = '';
-  window._packCategory = categoryName;
+  window._packCategory  = categoryName;
   window._packPoolAvail = avail;
+  _showPackListView();
+  renderPackTemplateList(categoryName);
+}
+
+function _showPackListView() {
+  document.getElementById('pack-list-view').style.display   = '';
+  document.getElementById('pack-create-view').style.display = 'none';
+}
+
+function _showPackCreateView() {
+  document.getElementById('pack-list-view').style.display   = 'none';
+  document.getElementById('pack-create-view').style.display = '';
+  document.getElementById('form-create-pack').reset();
+  document.getElementById('cp-name-err').classList.remove('show');
+  document.getElementById('pack-items-list').innerHTML = '';
+}
+
+function renderPackTemplateList(categoryName) {
+  const templates = getPackTemplates().filter(t => t.category === categoryName);
+  const el = document.getElementById('pack-templates-list');
+  if (!templates.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--c-text-soft);padding:1.5rem 0;font-size:.88rem">No hay packs creados aún.<br>Crea el primero con el botón de abajo.</div>';
+    return;
+  }
+  el.innerHTML = templates.map(t => {
+    const extraMeta = t.items && t.items.length
+      ? t.items.map(i => `${i.productName} ×${i.quantity}`).join(', ')
+      : '';
+    const meta = [t.charmQty > 0 ? `${t.charmQty} charm${t.charmQty !== 1 ? 's' : ''}` : '', extraMeta].filter(Boolean).join(' + ');
+    return `<div class="pack-template-item" data-template-id="${t.id}">
+      <div class="pack-template-info">
+        <div class="pack-template-name">${t.name}</div>
+        <div class="pack-template-meta">${meta} · ${fmt(t.price)}</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" data-sell-template="${t.id}">Vender</button>
+      <button class="btn-icon" data-delete-template="${t.id}" title="Eliminar pack" style="color:var(--c-danger);margin-left:.25rem">🗑</button>
+    </div>`;
+  }).join('');
 }
 
 function addPackItemRow() {
@@ -2385,9 +2457,14 @@ function initEventListeners() {
     openModal('modal-product-detail');
   });
 
-  /* ── Pack sale modal ── */
-  document.getElementById('btn-pack-add-item').addEventListener('click', () => addPackItemRow());
+  /* ── Pack modal: navigation ── */
+  document.getElementById('btn-show-create-pack').addEventListener('click', () => _showPackCreateView());
+  document.getElementById('btn-cancel-create-pack').addEventListener('click', () => {
+    _showPackListView();
+    renderPackTemplateList(window._packCategory || '');
+  });
 
+  document.getElementById('btn-pack-add-item').addEventListener('click', () => addPackItemRow());
   document.getElementById('pack-items-list').addEventListener('click', e => {
     const btn = e.target.closest('[data-remove-pack-row]');
     if (btn) btn.closest('.purchase-item-row').remove();
@@ -2398,51 +2475,83 @@ function initEventListeners() {
     openModal('modal-category-contents');
   });
 
-  document.getElementById('form-pack-sale').addEventListener('submit', e => {
+  /* ── Pack modal: create template ── */
+  document.getElementById('form-create-pack').addEventListener('submit', e => {
     e.preventDefault();
-    const category  = window._packCategory;
-    const charmQty  = parseInt(document.getElementById('pack-charm-qty').value) || 0;
-    const packPrice = parseFloat(document.getElementById('pack-price').value) || 0;
-    const note      = document.getElementById('pack-note').value;
-    const charmErr  = document.getElementById('pack-charm-err');
-    const priceErr  = document.getElementById('pack-price-err');
-    charmErr.classList.remove('show'); priceErr.classList.remove('show');
+    const name     = document.getElementById('cp-name').value.trim();
+    const charmQty = parseInt(document.getElementById('cp-charm-qty').value) || 0;
+    const price    = document.getElementById('cp-price').value;
+    const nameErr  = document.getElementById('cp-name-err');
+    if (!name) { nameErr.classList.add('show'); return; }
+    nameErr.classList.remove('show');
 
-    if (charmQty > (window._packPoolAvail || 0) && charmQty > 0) {
-      charmErr.textContent = `Solo hay ${window._packPoolAvail} disponibles.`;
-      charmErr.classList.add('show'); return;
-    }
-    if (charmQty === 0 && !document.querySelector('#pack-items-list .purchase-item-row')) {
-      charmErr.textContent = 'El pack debe tener al menos 1 charm o un producto adicional.';
-      charmErr.classList.add('show'); return;
-    }
-
-    // Collect extra items
     const items = [];
-    let itemsValid = true;
     document.querySelectorAll('#pack-items-list .purchase-item-row').forEach(row => {
       const productId = row.querySelector('.pi-product').value;
       const colorName = row.querySelector('.pi-color').value;
       const qty       = parseInt(row.querySelector('.pi-qty').value) || 0;
-      if (!productId || !colorName || qty < 1) { itemsValid = false; return; }
+      if (!productId || !colorName || qty < 1) return;
       const p = getProductById(productId);
-      const c = p?.colors.find(c => c.name === colorName);
-      if (!c) { itemsValid = false; return; }
-      const avail = colorAvailable(c);
-      if (qty > avail) { itemsValid = false; return; }
-      items.push({ productId, productName: p.name, colorName, quantity: qty, pricePerUnit: p.price });
+      if (!p) return;
+      items.push({ productId, productName: p.name, colorName, quantity: qty });
     });
-    if (!itemsValid) {
-      charmErr.textContent = 'Verifica los productos adicionales — selecciona producto, color y cantidad válida.';
-      charmErr.classList.add('show'); return;
+
+    addPackTemplate({ name, category: window._packCategory, charmQty, items, price });
+    _showPackListView();
+    renderPackTemplateList(window._packCategory || '');
+    showToast(`Pack "${name}" creado ✓`);
+  });
+
+  /* ── Pack modal: sell / delete template (delegation) ── */
+  document.getElementById('pack-templates-list').addEventListener('click', e => {
+    // Sell
+    const sellBtn = e.target.closest('[data-sell-template]');
+    if (sellBtn) {
+      const t = getPackTemplates().find(t => t.id === sellBtn.dataset.sellTemplate);
+      if (!t) return;
+      // Validate pool
+      if (t.charmQty > (window._packPoolAvail || 0)) {
+        showToast(`No hay suficientes charms disponibles (${window._packPoolAvail} disponibles, pack necesita ${t.charmQty})`);
+        return;
+      }
+      // Validate extra items stock
+      const products = getProducts();
+      let stockOK = true;
+      (t.items || []).forEach(item => {
+        const p = products.find(pr => pr.id === item.productId);
+        const c = p?.colors.find(c => c.name === item.colorName);
+        if (!c || colorAvailable(c) < item.quantity) stockOK = false;
+      });
+      if (!stockOK) { showToast('Stock insuficiente para uno o más productos del pack.'); return; }
+
+      showConfirm(
+        `¿Registrar venta del pack "${t.name}"?`,
+        () => {
+          addPack({ category: t.category, charmQty: t.charmQty, items: t.items, packPrice: t.price, note: t.name });
+          window._packPoolAvail = (window._packPoolAvail || 0) - t.charmQty;
+          document.getElementById('pack-pool-avail').textContent = window._packPoolAvail;
+          renderProductGrid();
+          renderPacksHistory();
+          renderBalance();
+          renderPackTemplateList(window._packCategory || '');
+          showToast(`Pack "${t.name}" vendido ✓`);
+        },
+        { title: 'Vender pack', okLabel: '✓ Vender' }
+      );
+      return;
     }
 
-    addPack({ category, charmQty, items, packPrice, note });
-    renderProductGrid();
-    renderPacksHistory();
-    renderBalance();
-    closeTopModal();
-    showToast(`Pack registrado ✓ (${charmQty} charms${items.length ? ' + ' + items.length + ' ítem' + (items.length > 1 ? 's' : '') : ''})`);
+    // Delete
+    const delBtn = e.target.closest('[data-delete-template]');
+    if (delBtn) {
+      const t = getPackTemplates().find(t => t.id === delBtn.dataset.deleteTemplate);
+      if (!t) return;
+      showConfirm(`¿Eliminar el pack "${t.name}"?`, () => {
+        deletePackTemplate(t.id);
+        renderPackTemplateList(window._packCategory || '');
+        showToast(`Pack "${t.name}" eliminado`);
+      }, { title: 'Eliminar pack', okLabel: 'Sí, eliminar' });
+    }
   });
 
   /* ── Category contents modal: remove from category ── */
