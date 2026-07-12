@@ -505,6 +505,10 @@ tbody tr:hover td { background: #faf6ff; }
 .balance-block--net .balance-value { color: var(--c-text); }
 .balance-block--net.positive .balance-value { color: var(--c-positive); }
 .balance-block--net.negative .balance-value { color: var(--c-negative); }
+.balance-breakdown {
+  font-size: .72rem; color: var(--c-text-soft); margin-top: .4rem;
+  line-height: 1.5; font-weight: 500;
+}
 
 /* ── Toast ──────────────────────────────────────────────────── */
 #toast {
@@ -608,6 +612,7 @@ tbody tr:hover td { background: #faf6ff; }
             <div class="balance-block">
               <label>Total Gastado</label>
               <div class="balance-value" id="bal-spent">$0</div>
+              <div class="balance-breakdown" id="bal-spent-detail"></div>
             </div>
             <div class="balance-block">
               <label>Total Ganado</label>
@@ -673,6 +678,7 @@ tbody tr:hover td { background: #faf6ff; }
             <div class="balance-block">
               <label>Total Gastado</label>
               <div class="balance-value" id="bal-spent-v">$0</div>
+              <div class="balance-breakdown" id="bal-spent-detail-v"></div>
             </div>
             <div class="balance-block">
               <label>Total Ganado</label>
@@ -696,6 +702,27 @@ tbody tr:hover td { background: #faf6ff; }
 
     <!-- Pane: Insumos -->
     <div id="subtab-insumos" class="finanzas-sections" style="display:none">
+      <!-- Balance (IDs con sufijo -i) -->
+      <div class="finanzas-card">
+        <div class="finanzas-card__header"><h3>📊 Balance</h3></div>
+        <div class="finanzas-card__body">
+          <div class="balance-grid">
+            <div class="balance-block">
+              <label>Total Gastado</label>
+              <div class="balance-value" id="bal-spent-i">$0</div>
+              <div class="balance-breakdown" id="bal-spent-detail-i"></div>
+            </div>
+            <div class="balance-block">
+              <label>Total Ganado</label>
+              <div class="balance-value" id="bal-earned-i">$0</div>
+            </div>
+            <div class="balance-block balance-block--net" id="bal-net-block-i">
+              <label>Balance Neto</label>
+              <div class="balance-value" id="bal-net-i">$0</div>
+            </div>
+          </div>
+        </div>
+      </div>
       <!-- Registrar Insumo -->
       <div class="finanzas-card">
         <div class="finanzas-card__header"><h3>🧴 Registrar Insumo</h3></div>
@@ -2351,18 +2378,25 @@ function updateTransitBadge(count) {
 }
 
 function renderBalance() {
-  const spent  = totalSpent();
+  const purchasesTotal = getPurchases().reduce((s, p) => s + p.total, 0);
+  const suppliesTotal  = getSupplies().reduce((s, s2) => s + s2.total, 0);
+  const spent  = purchasesTotal + suppliesTotal;
   const earned = totalEarned();
   const net    = earned - spent;
-  ['', '-v'].forEach(suf => {
+  const breakdown = suppliesTotal > 0 || purchasesTotal > 0
+    ? `Inventario: ${fmt(purchasesTotal)}\nInsumos: ${fmt(suppliesTotal)}`
+    : '';
+  ['', '-v', '-i'].forEach(suf => {
     const se = document.getElementById(`bal-spent${suf}`);
     const ee = document.getElementById(`bal-earned${suf}`);
     const ne = document.getElementById(`bal-net${suf}`);
     const nb = document.getElementById(`bal-net-block${suf}`);
+    const sd = document.getElementById(`bal-spent-detail${suf}`);
     if (se) se.textContent = fmt(spent);
     if (ee) ee.textContent = fmt(earned);
     if (ne) ne.textContent = fmt(net);
     if (nb) { nb.classList.toggle('positive', net > 0); nb.classList.toggle('negative', net < 0); }
+    if (sd) sd.innerHTML = breakdown.replace('\n', '<br>');
   });
 }
 
@@ -2689,7 +2723,7 @@ function initEventListeners() {
     document.getElementById('subtab-ventas').style.display  = sub === 'ventas'  ? '' : 'none';
     document.getElementById('subtab-insumos').style.display = sub === 'insumos' ? '' : 'none';
     if (sub === 'ventas')  { renderVentasHistory(); renderBalance(); }
-    if (sub === 'insumos') { renderSuppliesHistory(); }
+    if (sub === 'insumos') { renderSuppliesHistory(); renderBalance(); }
   });
 
   /* ── Insumos: add row ── */
