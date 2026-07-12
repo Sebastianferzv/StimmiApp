@@ -407,6 +407,28 @@ tbody tr:hover td { background: #faf6ff; }
 .sell-res-chip.active { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
 
 /* ── Finanzas ───────────────────────────────────────────────── */
+.finanzas-subnav {
+  display: flex; border-bottom: 2px solid var(--c-bg); margin-bottom: 1.5rem;
+}
+.finanzas-subtab {
+  padding: .6rem 1.25rem; font-size: .88rem; font-weight: 500;
+  border: none; background: transparent; color: var(--c-text-soft);
+  border-bottom: 2.5px solid transparent; margin-bottom: -2px;
+  transition: var(--tr); cursor: pointer;
+}
+.finanzas-subtab:hover { color: var(--c-text); }
+.finanzas-subtab.active { color: var(--c-text); border-bottom-color: var(--c-primary); font-weight: 600; }
+.supply-item-row {
+  display: grid; grid-template-columns: 2fr 1fr 1fr auto;
+  gap: .5rem; align-items: center;
+}
+.supply-item-row input {
+  padding: .45rem .6rem; border: 1.5px solid var(--c-border);
+  border-radius: 8px; font-size: .85rem; color: var(--c-text);
+  background: var(--c-white); outline: none; transition: var(--tr);
+  min-width: 0; width: 100%;
+}
+.supply-item-row input:focus { border-color: var(--c-primary); }
 .finanzas-sections { display: flex; flex-direction: column; gap: 2rem; }
 .finanzas-card {
   background: var(--c-white); border-radius: var(--r-card);
@@ -569,8 +591,15 @@ tbody tr:hover td { background: #faf6ff; }
   <!-- ── Tab Finanzas ── -->
   <section id="tab-finanzas" style="display:none">
     <div class="tab-header"><h2>Finanzas</h2></div>
-    <div class="finanzas-sections">
+    <!-- Sub-tab nav -->
+    <div class="finanzas-subnav">
+      <button class="finanzas-subtab active" data-subtab="compras">🛒 Compras</button>
+      <button class="finanzas-subtab" data-subtab="ventas">💸 Ventas</button>
+      <button class="finanzas-subtab" data-subtab="insumos">📦 Insumos</button>
+    </div>
 
+    <!-- Pane: Compras -->
+    <div id="subtab-compras" class="finanzas-sections">
       <!-- Balance -->
       <div class="finanzas-card">
         <div class="finanzas-card__header"><h3>📊 Balance</h3></div>
@@ -591,7 +620,6 @@ tbody tr:hover td { background: #faf6ff; }
           </div>
         </div>
       </div>
-
       <!-- Registrar Compra -->
       <div class="finanzas-card">
         <div class="finanzas-card__header"><h3>🛒 Registrar Compra</h3></div>
@@ -602,7 +630,6 @@ tbody tr:hover td { background: #faf6ff; }
             </div>
             <div class="purchase-items-list" id="purchase-items-list"></div>
             <button type="button" class="btn btn-ghost btn-sm" id="btn-add-row">+ Agregar ítem</button>
-
             <div class="extra-costs">
               <div class="extra-costs-title">Costos adicionales</div>
               <div class="form-row form-row-2">
@@ -616,7 +643,6 @@ tbody tr:hover td { background: #faf6ff; }
                 </div>
               </div>
             </div>
-
             <div class="purchase-total-row">
               <span>Total compra:</span>
               <span class="purchase-total-amount" id="purchase-running-total">$0</span>
@@ -628,7 +654,6 @@ tbody tr:hover td { background: #faf6ff; }
           </form>
         </div>
       </div>
-
       <!-- Historial compras -->
       <div class="finanzas-card">
         <div class="finanzas-card__header"><h3>🧾 Historial de Compras</h3></div>
@@ -636,7 +661,30 @@ tbody tr:hover td { background: #faf6ff; }
           <div class="history-table-wrap" id="compras-history"></div>
         </div>
       </div>
+    </div>
 
+    <!-- Pane: Ventas -->
+    <div id="subtab-ventas" class="finanzas-sections" style="display:none">
+      <!-- Balance (IDs con sufijo -v) -->
+      <div class="finanzas-card">
+        <div class="finanzas-card__header"><h3>📊 Balance</h3></div>
+        <div class="finanzas-card__body">
+          <div class="balance-grid">
+            <div class="balance-block">
+              <label>Total Gastado</label>
+              <div class="balance-value" id="bal-spent-v">$0</div>
+            </div>
+            <div class="balance-block">
+              <label>Total Ganado</label>
+              <div class="balance-value" id="bal-earned-v">$0</div>
+            </div>
+            <div class="balance-block balance-block--net" id="bal-net-block-v">
+              <label>Balance Neto</label>
+              <div class="balance-value" id="bal-net-v">$0</div>
+            </div>
+          </div>
+        </div>
+      </div>
       <!-- Historial ventas -->
       <div class="finanzas-card">
         <div class="finanzas-card__header"><h3>💸 Historial de Ventas</h3></div>
@@ -644,8 +692,51 @@ tbody tr:hover td { background: #faf6ff; }
           <div class="history-table-wrap" id="ventas-history"></div>
         </div>
       </div>
+    </div>
 
-
+    <!-- Pane: Insumos -->
+    <div id="subtab-insumos" class="finanzas-sections" style="display:none">
+      <!-- Registrar Insumo -->
+      <div class="finanzas-card">
+        <div class="finanzas-card__header"><h3>🧴 Registrar Insumo</h3></div>
+        <div class="finanzas-card__body">
+          <form id="form-supply" novalidate>
+            <div class="purchase-items-header" style="grid-template-columns:2fr 1fr 1fr auto">
+              <span>Nombre</span><span>Costo unit.</span><span>Cantidad</span><span></span>
+            </div>
+            <div class="supply-items-list" id="supply-items-list"></div>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-add-supply-row">+ Agregar ítem</button>
+            <div class="extra-costs">
+              <div class="extra-costs-title">Costos adicionales</div>
+              <div class="form-row form-row-2">
+                <div class="form-group">
+                  <label>Envío (CLP)</label>
+                  <input type="number" id="supply-shipping" placeholder="0" min="0" value="0">
+                </div>
+                <div class="form-group">
+                  <label>Aduana (CLP)</label>
+                  <input type="number" id="supply-customs" placeholder="0" min="0" value="0">
+                </div>
+              </div>
+            </div>
+            <div class="purchase-total-row">
+              <span>Total insumo:</span>
+              <span class="purchase-total-amount" id="supply-running-total">$0</span>
+            </div>
+            <div id="supply-form-error" class="field-error"></div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-secondary">Guardar insumo</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <!-- Historial insumos -->
+      <div class="finanzas-card">
+        <div class="finanzas-card__header"><h3>🧾 Historial de Insumos</h3></div>
+        <div class="finanzas-card__body">
+          <div class="history-table-wrap" id="insumos-history"></div>
+        </div>
+      </div>
     </div>
   </section>
 </main>
@@ -1061,10 +1152,11 @@ const KEYS = {
   categories:     'stimmi_categories',
   packs:          'stimmi_packs',
   packTemplates:  'stimmi_pack_templates',
+  supplies:       'stimmi_supplies',
 };
 
 /* ── Storage helpers ── */
-let _mem = { stimmi_products: [], stimmi_purchases: [], stimmi_sales: [], stimmi_categories: [], stimmi_packs: [], stimmi_pack_templates: [] };
+let _mem = { stimmi_products: [], stimmi_purchases: [], stimmi_sales: [], stimmi_categories: [], stimmi_packs: [], stimmi_pack_templates: [], stimmi_supplies: [] };
 let storageOK = true;
 let _cloudOK = false;
 try { localStorage.setItem('__test__', '1'); localStorage.removeItem('__test__'); }
@@ -1104,13 +1196,14 @@ async function cloudPut(key, value) {
 async function initCloudData() {
   setCloudBtn('🔄', 'Conectando…');
   try {
-    const [products, purchases, sales, categories, packs, packTemplates] = await Promise.all([
+    const [products, purchases, sales, categories, packs, packTemplates, supplies] = await Promise.all([
       fetch('/api/data?key=' + KEYS.products).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
       fetch('/api/data?key=' + KEYS.purchases).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
       fetch('/api/data?key=' + KEYS.sales).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
       fetch('/api/data?key=' + KEYS.categories).then(r => r.ok ? r.json() : []).catch(() => []),
       fetch('/api/data?key=' + KEYS.packs).then(r => r.ok ? r.json() : []).catch(() => []),
       fetch('/api/data?key=' + KEYS.packTemplates).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('/api/data?key=' + KEYS.supplies).then(r => r.ok ? r.json() : []).catch(() => []),
     ]);
     _cloudOK = true;
 
@@ -1140,6 +1233,7 @@ async function initCloudData() {
     _mem[KEYS.categories]    = categories;
     _mem[KEYS.packs]         = packs;
     _mem[KEYS.packTemplates] = packTemplates;
+    _mem[KEYS.supplies]      = supplies;
     setCloudBtn('🌐', 'Conectado a Neon');
   } catch(e) {
     _cloudOK = false;
@@ -1150,6 +1244,7 @@ async function initCloudData() {
       _mem[KEYS.categories]    = JSON.parse(localStorage.getItem(KEYS.categories)    || '[]');
       _mem[KEYS.packs]         = JSON.parse(localStorage.getItem(KEYS.packs)          || '[]');
       _mem[KEYS.packTemplates] = JSON.parse(localStorage.getItem(KEYS.packTemplates) || '[]');
+      _mem[KEYS.supplies]      = JSON.parse(localStorage.getItem(KEYS.supplies)      || '[]');
     }
     setCloudBtn('☁️', 'Sin conexión a la nube — click para reintentar');
     console.warn('Cloud unavailable:', e.message);
@@ -1210,7 +1305,7 @@ async function importData(file) {
 
 function clearAllData() {
   showConfirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.', () => {
-    [KEYS.products, KEYS.purchases, KEYS.sales, KEYS.categories, KEYS.packs, KEYS.packTemplates].forEach(k => {
+    [KEYS.products, KEYS.purchases, KEYS.sales, KEYS.categories, KEYS.packs, KEYS.packTemplates, KEYS.supplies].forEach(k => {
       if (storageOK) localStorage.removeItem(k);
       else _mem[k] = [];
     });
@@ -1371,6 +1466,23 @@ function updateSale(saleId, { quantity, pricePerUnit, date, note }) {
 function getPurchases()     { return load(KEYS.purchases); }
 function savePurchases(arr) { save(KEYS.purchases, arr); }
 
+/* ── Data: Supplies ── */
+function getSupplies()     { return load(KEYS.supplies); }
+function saveSupplies(arr) { save(KEYS.supplies, arr); }
+
+function addSupply({ items, shipping, customs }) {
+  const itemsTotal = items.reduce((s, i) => s + i.unitCost * i.quantity, 0);
+  const total = itemsTotal + (shipping || 0) + (customs || 0);
+  const supply = {
+    id: genId(), date: new Date().toISOString(),
+    items, shipping: shipping || 0, customs: customs || 0, total,
+  };
+  const supplies = getSupplies();
+  supplies.push(supply);
+  saveSupplies(supplies);
+  return supply;
+}
+
 function addPurchase({ items, shipping, customs }) {
   // Stock is NOT added yet — purchase starts in transit
   const itemsTotal = items.reduce((s, i) => s + i.unitCost * i.quantity, 0);
@@ -1474,7 +1586,7 @@ function removeReservation(productId, colorName, reservationId) {
   saveProducts(arr);
 }
 function productTotalSold(p)     { return p.colors.reduce((s, c) => s + (c.sold || 0), 0); }
-function totalSpent()            { return getPurchases().reduce((s, p) => s + p.total, 0); }
+function totalSpent()            { return getPurchases().reduce((s, p) => s + p.total, 0) + getSupplies().reduce((s, s2) => s + s2.total, 0); }
 function totalEarned()           { return getSales().reduce((s, s2) => s + s2.total, 0); }
 
 /* ── Data: Categories ── */
@@ -2103,6 +2215,63 @@ function renderVentasHistory() {
   </table>`;
 }
 
+function renderSuppliesHistory() {
+  const supplies = getSupplies().slice().reverse();
+  const el = document.getElementById('insumos-history');
+  if (!el) return;
+  if (!supplies.length) { el.innerHTML = '<div class="history-empty">Sin insumos registrados aún.</div>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Fecha</th><th>Ítems</th><th>Extras</th><th>Total</th><th></th></tr></thead>
+    <tbody>${supplies.map(s => {
+      const extras = [];
+      if (s.shipping > 0) extras.push(`Envío ${fmt(s.shipping)}`);
+      if (s.customs  > 0) extras.push(`Aduana ${fmt(s.customs)}`);
+      const itemsSummary = s.items.map(i => `${i.name} ×${i.quantity} — <span style="color:var(--c-text-soft)">${fmt(i.unitCost)} c/u</span>`).join('<br>');
+      return `<tr>
+        <td style="white-space:nowrap">${fmtDate(s.date)}</td>
+        <td style="font-size:.82rem">${itemsSummary}</td>
+        <td style="font-size:.82rem;color:var(--c-text-soft)">${extras.join('<br>') || '—'}</td>
+        <td style="font-weight:700;white-space:nowrap">${fmt(s.total)}</td>
+        <td><button class="btn-icon" data-delete-supply="${s.id}" title="Eliminar" style="color:#e06c75">✕</button></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function addSupplyItemRow() {
+  const list = document.getElementById('supply-items-list');
+  const row  = document.createElement('div');
+  row.className = 'supply-item-row';
+  row.innerHTML = `
+    <input type="text" class="si-name" placeholder="Nombre del insumo">
+    <input type="number" class="si-price" placeholder="0" min="0">
+    <input type="number" class="si-qty" value="1" min="1">
+    <button type="button" class="btn-icon" data-remove-supply-row title="Quitar">✕</button>`;
+  list.appendChild(row);
+}
+
+function resetSupplyForm() {
+  document.getElementById('supply-items-list').innerHTML = '';
+  document.getElementById('supply-shipping').value = '0';
+  document.getElementById('supply-customs').value  = '0';
+  addSupplyItemRow();
+  renderSupplyRunningTotal();
+}
+
+function renderSupplyRunningTotal() {
+  const rows = document.querySelectorAll('.supply-item-row');
+  let total  = 0;
+  rows.forEach(row => {
+    const price = parseFloat(row.querySelector('.si-price')?.value) || 0;
+    const qty   = parseInt(row.querySelector('.si-qty')?.value)     || 1;
+    total += price * qty;
+  });
+  total += parseFloat(document.getElementById('supply-shipping')?.value) || 0;
+  total += parseFloat(document.getElementById('supply-customs')?.value)  || 0;
+  const el = document.getElementById('supply-running-total');
+  if (el) el.textContent = fmt(total);
+}
+
 function renderEditSaleModal(saleId) {
   const sale = getSales().find(s => s.id === saleId);
   if (!sale) return;
@@ -2185,12 +2354,16 @@ function renderBalance() {
   const spent  = totalSpent();
   const earned = totalEarned();
   const net    = earned - spent;
-  document.getElementById('bal-spent').textContent  = fmt(spent);
-  document.getElementById('bal-earned').textContent = fmt(earned);
-  document.getElementById('bal-net').textContent    = fmt(net);
-  const block = document.getElementById('bal-net-block');
-  block.classList.toggle('positive', net > 0);
-  block.classList.toggle('negative', net < 0);
+  ['', '-v'].forEach(suf => {
+    const se = document.getElementById(`bal-spent${suf}`);
+    const ee = document.getElementById(`bal-earned${suf}`);
+    const ne = document.getElementById(`bal-net${suf}`);
+    const nb = document.getElementById(`bal-net-block${suf}`);
+    if (se) se.textContent = fmt(spent);
+    if (ee) ee.textContent = fmt(earned);
+    if (ne) ne.textContent = fmt(net);
+    if (nb) { nb.classList.toggle('positive', net > 0); nb.classList.toggle('negative', net < 0); }
+  });
 }
 
 /* ================================================================
@@ -2501,9 +2674,77 @@ function initEventListeners() {
       document.getElementById('tab-inventario').style.display = tab === 'inventario' ? '' : 'none';
       document.getElementById('tab-transito').style.display   = tab === 'transito'   ? '' : 'none';
       document.getElementById('tab-finanzas').style.display   = tab === 'finanzas'   ? '' : 'none';
-      if (tab === 'finanzas') { renderComprasHistory(); renderVentasHistory(); renderBalance(); }
+      if (tab === 'finanzas') { renderComprasHistory(); renderBalance(); }
       if (tab === 'transito') { renderTransitTab(); }
     });
+  });
+
+  /* ── Finanzas: sub-tab switching ── */
+  document.getElementById('tab-finanzas').addEventListener('click', e => {
+    const btn = e.target.closest('.finanzas-subtab');
+    if (!btn) return;
+    const sub = btn.dataset.subtab;
+    document.querySelectorAll('.finanzas-subtab').forEach(b => b.classList.toggle('active', b === btn));
+    document.getElementById('subtab-compras').style.display = sub === 'compras' ? '' : 'none';
+    document.getElementById('subtab-ventas').style.display  = sub === 'ventas'  ? '' : 'none';
+    document.getElementById('subtab-insumos').style.display = sub === 'insumos' ? '' : 'none';
+    if (sub === 'ventas')  { renderVentasHistory(); renderBalance(); }
+    if (sub === 'insumos') { renderSuppliesHistory(); }
+  });
+
+  /* ── Insumos: add row ── */
+  document.getElementById('btn-add-supply-row').addEventListener('click', () => {
+    addSupplyItemRow();
+    renderSupplyRunningTotal();
+  });
+
+  /* ── Insumos: remove row (delegation) ── */
+  document.getElementById('supply-items-list').addEventListener('click', e => {
+    const btn = e.target.closest('[data-remove-supply-row]');
+    if (btn) { btn.closest('.supply-item-row').remove(); renderSupplyRunningTotal(); }
+  });
+
+  /* ── Insumos: running total ── */
+  document.getElementById('supply-items-list').addEventListener('input', renderSupplyRunningTotal);
+  document.getElementById('supply-shipping').addEventListener('input', renderSupplyRunningTotal);
+  document.getElementById('supply-customs').addEventListener('input', renderSupplyRunningTotal);
+
+  /* ── Insumos: form submit ── */
+  document.getElementById('form-supply').addEventListener('submit', e => {
+    e.preventDefault();
+    const rows  = document.querySelectorAll('.supply-item-row');
+    const items = [];
+    rows.forEach(row => {
+      const name     = row.querySelector('.si-name')?.value.trim()  || '';
+      const unitCost = parseFloat(row.querySelector('.si-price')?.value) || 0;
+      const quantity = parseInt(row.querySelector('.si-qty')?.value)     || 1;
+      if (name && unitCost > 0) items.push({ name, unitCost, quantity });
+    });
+    const errEl = document.getElementById('supply-form-error');
+    if (!items.length) {
+      errEl.textContent = 'Agrega al menos un ítem con nombre y costo.';
+      errEl.classList.add('show'); return;
+    }
+    errEl.classList.remove('show');
+    const shipping = parseFloat(document.getElementById('supply-shipping').value) || 0;
+    const customs  = parseFloat(document.getElementById('supply-customs').value)  || 0;
+    addSupply({ items, shipping, customs });
+    resetSupplyForm();
+    renderSuppliesHistory();
+    renderBalance();
+    showToast('Insumo registrado ✓');
+  });
+
+  /* ── Insumos: delete (delegation) ── */
+  document.getElementById('insumos-history').addEventListener('click', e => {
+    const btn = e.target.closest('[data-delete-supply]');
+    if (!btn) return;
+    showConfirm('¿Eliminar este insumo?', () => {
+      saveSupplies(getSupplies().filter(s => s.id !== btn.dataset.deleteSupply));
+      renderSuppliesHistory();
+      renderBalance();
+      showToast('Insumo eliminado');
+    }, { title: 'Eliminar insumo', okLabel: 'Sí, eliminar' });
   });
 
   /* ── Overlay click — close only the topmost modal ── */
@@ -3206,6 +3447,7 @@ async function init() {
   if (overlay) overlay.style.display = 'none';
 
   addPurchaseItemRow();
+  addSupplyItemRow();
   renderProductGrid();
   renderTransitTab();
   renderBalance();
