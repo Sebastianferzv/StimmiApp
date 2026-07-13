@@ -2230,7 +2230,10 @@ function renderComprasHistory() {
 }
 
 function renderVentasHistory() {
-  const allSales = getSales().slice().reverse();
+  if (!window._ventasSortBy)  window._ventasSortBy  = 'date';
+  if (!window._ventasSortDir) window._ventasSortDir = 'desc';
+
+  const allSales = getSales().slice();
   const el = document.getElementById('ventas-history');
 
   // Populate product filter (preserve current selection)
@@ -2242,8 +2245,8 @@ function renderVentasHistory() {
   }
 
   // Read filters
-  const fromVal = document.getElementById('vf-from')?.value  || '';
-  const toVal   = document.getElementById('vf-to')?.value    || '';
+  const fromVal = document.getElementById('vf-from')?.value || '';
+  const toVal   = document.getElementById('vf-to')?.value   || '';
   const prodVal = prodSel?.value || '';
 
   // Apply filters
@@ -2252,14 +2255,34 @@ function renderVentasHistory() {
   if (toVal)   sales = sales.filter(s => s.date.slice(0, 10) <= toVal);
   if (prodVal) sales = sales.filter(s => s.productName === prodVal);
 
+  // Sort
+  const dir = window._ventasSortDir === 'asc' ? 1 : -1;
+  sales.sort((a, b) => {
+    const va = window._ventasSortBy === 'date' ? a.date : a.productName.toLowerCase();
+    const vb = window._ventasSortBy === 'date' ? b.date : b.productName.toLowerCase();
+    return va < vb ? -dir : va > vb ? dir : 0;
+  });
+
   if (!sales.length) {
     el.innerHTML = allSales.length
       ? '<div class="history-empty">Sin resultados para los filtros aplicados.</div>'
       : '<div class="history-empty">Sin ventas registradas aún.</div>';
     return;
   }
+
+  const sortIcon = col => {
+    if (window._ventasSortBy !== col) return '<span style="opacity:.25;font-size:.65rem;margin-left:.2rem">⇅</span>';
+    return window._ventasSortDir === 'asc'
+      ? '<span style="font-size:.65rem;margin-left:.2rem">▲</span>'
+      : '<span style="font-size:.65rem;margin-left:.2rem">▼</span>';
+  };
+
   el.innerHTML = `<table>
-    <thead><tr><th>Fecha</th><th>Producto</th><th>Color</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead>
+    <thead><tr>
+      <th data-sort-col="date" style="cursor:pointer;user-select:none;white-space:nowrap">Fecha${sortIcon('date')}</th>
+      <th data-sort-col="product" style="cursor:pointer;user-select:none">Producto${sortIcon('product')}</th>
+      <th>Color</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th>
+    </tr></thead>
     <tbody>${sales.map(s => {
       const isPack = s.type === 'pack';
       const nameLine = isPack
@@ -2782,7 +2805,7 @@ function initEventListeners() {
     if (sub === 'insumos') { renderSuppliesHistory(); renderBalance(); }
   });
 
-  /* ── Ventas: filtros ── */
+  /* ── Ventas: filtros y orden ── */
   document.getElementById('vf-from').addEventListener('input', renderVentasHistory);
   document.getElementById('vf-to').addEventListener('input', renderVentasHistory);
   document.getElementById('vf-product').addEventListener('change', renderVentasHistory);
@@ -2790,6 +2813,18 @@ function initEventListeners() {
     document.getElementById('vf-from').value    = '';
     document.getElementById('vf-to').value      = '';
     document.getElementById('vf-product').value = '';
+    renderVentasHistory();
+  });
+  document.getElementById('ventas-history').addEventListener('click', e => {
+    const th = e.target.closest('[data-sort-col]');
+    if (!th) return;
+    const col = th.dataset.sortCol;
+    if (window._ventasSortBy === col) {
+      window._ventasSortDir = window._ventasSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      window._ventasSortBy  = col;
+      window._ventasSortDir = col === 'date' ? 'desc' : 'asc';
+    }
     renderVentasHistory();
   });
 
