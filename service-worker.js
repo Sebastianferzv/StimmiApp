@@ -1,5 +1,5 @@
-const CACHE = 'stimmilab-v1';
-const STATIC = ['/icon.svg', '/manifest.json'];
+const CACHE = 'stimmilab-v2';
+const STATIC = ['/logo.jpg', '/icon.svg', '/manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC)));

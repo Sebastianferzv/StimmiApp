@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="stimmilab">
 <link rel="manifest" href="/manifest.json">
-<link rel="icon" href="/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/icon.svg">
+<link rel="icon" href="/logo.jpg" type="image/jpeg">
+<link rel="apple-touch-icon" href="/logo.jpg">
 <title>stimmilab</title>
 <style>
 /* ── Variables ─────────────────────────────────────────────── */
@@ -56,9 +56,9 @@ header {
 }
 .header-logo {
   width: 44px; height: 44px;
-  background: var(--c-white);
   border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
+  object-fit: cover;
+  flex-shrink: 0;
   font-size: 1.4rem;
   box-shadow: 0 2px 8px rgba(107,79,160,.15);
   flex-shrink: 0;
@@ -552,7 +552,7 @@ tbody tr:hover td { background: #faf6ff; }
 <div id="storage-warning" style="display:none">⚠️ localStorage no disponible — los datos no se guardarán al cerrar.</div>
 
 <header>
-  <div class="header-logo">🌸</div>
+  <img class="header-logo" src="/logo.jpg" alt="stimmilab">
   <div>
     <div class="header-title">stimmilab</div>
     <div class="header-sub">gestión de tienda</div>
