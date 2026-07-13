@@ -2399,37 +2399,34 @@ function renderTransitTab() {
     return;
   }
 
-  // Aggregate transit items by productId → colorName → quantity
-  const byProduct = {};
-  purchases.forEach(purchase => {
-    purchase.items.forEach(item => {
-      if (!byProduct[item.productId]) byProduct[item.productId] = { productId: item.productId, productName: item.productName, colors: {} };
-      byProduct[item.productId].colors[item.colorName] = (byProduct[item.productId].colors[item.colorName] || 0) + item.quantity;
-    });
-  });
-
-  const products = getProducts();
-  const cards = Object.values(byProduct).map(entry => {
-    const prod = products.find(p => p.id === entry.productId);
-    const img  = (prod && prod.imageUrl) ? prod.imageUrl : PLACEHOLDER;
-    const colorRows = Object.entries(entry.colors).map(([colorName, qty]) => {
-      const color = prod && prod.colors.find(c => c.name === colorName);
+  const prods = getProducts();
+  const cards = purchases.map(purchase => {
+    const itemRows = purchase.items.map(item => {
+      const prod    = prods.find(p => p.id === item.productId);
+      const color   = prod?.colors.find(c => c.name === item.colorName);
       const reserved = color ? colorReservedCount(color) : 0;
       return `<div class="transit-color-row">
         <div class="transit-color-info">
-          <strong>${colorName}</strong>
-          <span>${qty} en camino${reserved > 0 ? ` · ${reserved} reservada${reserved !== 1 ? 's' : ''}` : ''}</span>
+          <strong>${item.productName}</strong>
+          <span>${item.colorName} · ${item.quantity} en camino${reserved > 0 ? ` · ${reserved} reservada${reserved !== 1 ? 's' : ''}` : ''}</span>
         </div>
-        <button class="btn btn-ghost btn-sm" data-transit-reserve="${entry.productId}" data-transit-color="${colorName}">+ Reservar</button>
+        <button class="btn btn-ghost btn-sm" data-transit-reserve="${item.productId}" data-transit-color="${item.colorName}">+ Reservar</button>
       </div>`;
     }).join('');
-    return `<div class="product-card">
-      <div class="product-card__img">
-        <img src="${img}" alt="${entry.productName}" onerror="this.src='${PLACEHOLDER}'">
-      </div>
-      <div class="product-card__body transit-card">
-        <div class="transit-card__name">${entry.productName}</div>
-        ${colorRows}
+    const extras = [];
+    if (purchase.shipping > 0) extras.push(`Envío ${fmt(purchase.shipping)}`);
+    if (purchase.customs  > 0) extras.push(`Aduana ${fmt(purchase.customs)}`);
+    return `<div class="product-card" style="display:block">
+      <div class="product-card__body transit-card" style="padding:1rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;gap:.5rem">
+          <div class="transit-card__name">📦 Pedido del ${fmtDate(purchase.date)}</div>
+          <span style="font-weight:700;white-space:nowrap">${fmt(purchase.total)}</span>
+        </div>
+        ${itemRows}
+        ${extras.length ? `<div style="font-size:.76rem;color:var(--c-text-soft);margin-top:.5rem">${extras.join(' · ')}</div>` : ''}
+        <div style="margin-top:.75rem;text-align:right">
+          <button class="btn btn-secondary btn-sm" data-receive-purchase="${purchase.id}">✓ Recibido</button>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -2437,7 +2434,7 @@ function renderTransitTab() {
   grid.innerHTML  = cards;
   grid.style.display  = '';
   empty.style.display = 'none';
-  updateTransitBadge(Object.keys(byProduct).length);
+  updateTransitBadge(purchases.length);
 }
 
 function updateTransitBadge(count) {
@@ -3557,12 +3554,34 @@ function initEventListeners() {
     );
   });
 
-  /* ── Pestaña tránsito: reservar desde card ── */
+  /* ── Pestaña tránsito: recibir o reservar desde card ── */
   document.getElementById('transit-grid').addEventListener('click', e => {
-    const btn = e.target.closest('[data-transit-reserve]');
-    if (!btn) return;
-    const productId    = btn.dataset.transitReserve;
-    const colorName    = btn.dataset.transitColor;
+    // Recibir pedido
+    const recBtn = e.target.closest('[data-receive-purchase]');
+    if (recBtn) {
+      const purchaseId = recBtn.dataset.receivePurchase;
+      const purchase   = getPurchases().find(p => p.id === purchaseId);
+      if (!purchase) return;
+      const names = [...new Set(purchase.items.map(i => i.productName))].join(', ');
+      showConfirm(
+        `¿Marcar este pedido como recibido? El stock de ${names} se agregará al inventario.`,
+        () => {
+          receivePurchase(purchaseId);
+          renderProductGrid();
+          renderTransitTab();
+          renderComprasHistory();
+          renderBalance();
+          showToast('Pedido recibido — stock agregado al inventario ✓');
+        },
+        { title: 'Confirmar recepción', okLabel: '✓ Sí, llegó' }
+      );
+      return;
+    }
+    // Reservar ítem
+    const resBtn = e.target.closest('[data-transit-reserve]');
+    if (!resBtn) return;
+    const productId    = resBtn.dataset.transitReserve;
+    const colorName    = resBtn.dataset.transitColor;
     const p            = getProductById(productId);
     const color        = p?.colors.find(c => c.name === colorName);
     const transitTotal = transitQtyForColor(productId, colorName);
