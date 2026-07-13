@@ -696,6 +696,21 @@ tbody tr:hover td { background: #faf6ff; }
       <div class="finanzas-card">
         <div class="finanzas-card__header"><h3>💸 Historial de Ventas</h3></div>
         <div class="finanzas-card__body">
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:.75rem;padding-bottom:.75rem;border-bottom:1.5px solid var(--c-bg)">
+            <div style="display:flex;flex-direction:column;gap:.2rem">
+              <label style="font-size:.73rem;font-weight:600;color:var(--c-text-soft)">Desde</label>
+              <input type="date" id="vf-from" style="padding:.35rem .5rem;border:1.5px solid var(--c-border);border-radius:8px;font-size:.82rem;color:var(--c-text);background:var(--c-white);outline:none">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:.2rem">
+              <label style="font-size:.73rem;font-weight:600;color:var(--c-text-soft)">Hasta</label>
+              <input type="date" id="vf-to" style="padding:.35rem .5rem;border:1.5px solid var(--c-border);border-radius:8px;font-size:.82rem;color:var(--c-text);background:var(--c-white);outline:none">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:.2rem;flex:1;min-width:130px">
+              <label style="font-size:.73rem;font-weight:600;color:var(--c-text-soft)">Producto</label>
+              <select id="vf-product" style="padding:.35rem .5rem;border:1.5px solid var(--c-border);border-radius:8px;font-size:.82rem;color:var(--c-text);background:var(--c-white);outline:none;width:100%"><option value="">Todos</option></select>
+            </div>
+            <button type="button" id="btn-clear-ventas-filter" class="btn btn-ghost btn-sm" style="white-space:nowrap;align-self:flex-end">✕ Limpiar</button>
+          </div>
           <div class="history-table-wrap" id="ventas-history"></div>
         </div>
       </div>
@@ -1058,6 +1073,10 @@ tbody tr:hover td { background: #faf6ff; }
       </div>
       <div class="sell-subtotal" id="sell-subtotal">Total: $0</div>
       <div class="form-group" style="margin-top:.75rem">
+        <label>Fecha <span style="font-weight:400;color:var(--c-text-soft)">(opcional — vacío = hoy)</span></label>
+        <input type="date" id="sell-date">
+      </div>
+      <div class="form-group">
         <label>Comentario <span style="font-weight:400;color:var(--c-text-soft)">(opcional)</span></label>
         <textarea id="sell-note" rows="2" style="resize:vertical" placeholder="Ej: cliente pagó en efectivo, envío pendiente…"></textarea>
       </div>
@@ -1432,7 +1451,7 @@ function updateColorStock(productId, colorName, value) {
   if (c) { c.total = Math.max(0, parseInt(value) || 0); saveProducts(arr); }
 }
 
-function recordSale(productId, colorName, quantity, note = '') {
+function recordSale(productId, colorName, quantity, note = '', saleDate = null) {
   const arr = getProducts();
   const p = arr.find(p => p.id === productId);
   if (!p) return null;
@@ -1441,7 +1460,7 @@ function recordSale(productId, colorName, quantity, note = '') {
   c.sold += quantity;
   saveProducts(arr);
   const sale = {
-    id: genId(), date: new Date().toISOString(),
+    id: genId(), date: saleDate ? new Date(saleDate).toISOString() : new Date().toISOString(),
     productId, productName: p.name, color: colorName,
     quantity, pricePerUnit: p.price, total: quantity * p.price,
     note: note.trim(),
@@ -2129,8 +2148,9 @@ function renderSellModal(p) {
   if (!p) return;
   document.getElementById('sell-product-name').textContent = p.name;
   document.getElementById('sell-price').textContent = fmt(p.price);
-  document.getElementById('sell-qty').value = 1;
+  document.getElementById('sell-qty').value  = 1;
   document.getElementById('sell-note').value = '';
+  document.getElementById('sell-date').value = '';
   document.getElementById('sell-qty-err').classList.remove('show');
   const sellableColors = p.colors.filter(c => colorAvailable(c) > 0 || colorReservedCount(c) > 0);
   const sel = document.getElementById('sell-color');
@@ -2210,9 +2230,34 @@ function renderComprasHistory() {
 }
 
 function renderVentasHistory() {
-  const sales = getSales().slice().reverse();
+  const allSales = getSales().slice().reverse();
   const el = document.getElementById('ventas-history');
-  if (!sales.length) { el.innerHTML = '<div class="history-empty">Sin ventas registradas aún.</div>'; return; }
+
+  // Populate product filter (preserve current selection)
+  const prodSel = document.getElementById('vf-product');
+  if (prodSel) {
+    const current = prodSel.value;
+    const names   = [...new Set(allSales.map(s => s.productName))].sort((a, b) => a.localeCompare(b));
+    prodSel.innerHTML = '<option value="">Todos</option>' + names.map(n => `<option value="${n}"${n === current ? ' selected' : ''}>${n}</option>`).join('');
+  }
+
+  // Read filters
+  const fromVal = document.getElementById('vf-from')?.value  || '';
+  const toVal   = document.getElementById('vf-to')?.value    || '';
+  const prodVal = prodSel?.value || '';
+
+  // Apply filters
+  let sales = allSales;
+  if (fromVal) sales = sales.filter(s => s.date.slice(0, 10) >= fromVal);
+  if (toVal)   sales = sales.filter(s => s.date.slice(0, 10) <= toVal);
+  if (prodVal) sales = sales.filter(s => s.productName === prodVal);
+
+  if (!sales.length) {
+    el.innerHTML = allSales.length
+      ? '<div class="history-empty">Sin resultados para los filtros aplicados.</div>'
+      : '<div class="history-empty">Sin ventas registradas aún.</div>';
+    return;
+  }
   el.innerHTML = `<table>
     <thead><tr><th>Fecha</th><th>Producto</th><th>Color</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead>
     <tbody>${sales.map(s => {
@@ -2709,7 +2754,16 @@ function initEventListeners() {
       document.getElementById('tab-inventario').style.display = tab === 'inventario' ? '' : 'none';
       document.getElementById('tab-transito').style.display   = tab === 'transito'   ? '' : 'none';
       document.getElementById('tab-finanzas').style.display   = tab === 'finanzas'   ? '' : 'none';
-      if (tab === 'finanzas') { renderComprasHistory(); renderBalance(); }
+      if (tab === 'finanzas') {
+        const sub = window._lastFinanzasSubtab || 'compras';
+        document.querySelectorAll('.finanzas-subtab').forEach(b => b.classList.toggle('active', b.dataset.subtab === sub));
+        document.getElementById('subtab-compras').style.display = sub === 'compras' ? '' : 'none';
+        document.getElementById('subtab-ventas').style.display  = sub === 'ventas'  ? '' : 'none';
+        document.getElementById('subtab-insumos').style.display = sub === 'insumos' ? '' : 'none';
+        if (sub === 'compras') { renderComprasHistory(); renderBalance(); }
+        if (sub === 'ventas')  { renderVentasHistory(); renderBalance(); }
+        if (sub === 'insumos') { renderSuppliesHistory(); renderBalance(); }
+      }
       if (tab === 'transito') { renderTransitTab(); }
     });
   });
@@ -2719,12 +2773,24 @@ function initEventListeners() {
     const btn = e.target.closest('.finanzas-subtab');
     if (!btn) return;
     const sub = btn.dataset.subtab;
+    window._lastFinanzasSubtab = sub;
     document.querySelectorAll('.finanzas-subtab').forEach(b => b.classList.toggle('active', b === btn));
     document.getElementById('subtab-compras').style.display = sub === 'compras' ? '' : 'none';
     document.getElementById('subtab-ventas').style.display  = sub === 'ventas'  ? '' : 'none';
     document.getElementById('subtab-insumos').style.display = sub === 'insumos' ? '' : 'none';
     if (sub === 'ventas')  { renderVentasHistory(); renderBalance(); }
     if (sub === 'insumos') { renderSuppliesHistory(); renderBalance(); }
+  });
+
+  /* ── Ventas: filtros ── */
+  document.getElementById('vf-from').addEventListener('input', renderVentasHistory);
+  document.getElementById('vf-to').addEventListener('input', renderVentasHistory);
+  document.getElementById('vf-product').addEventListener('change', renderVentasHistory);
+  document.getElementById('btn-clear-ventas-filter').addEventListener('click', () => {
+    document.getElementById('vf-from').value    = '';
+    document.getElementById('vf-to').value      = '';
+    document.getElementById('vf-product').value = '';
+    renderVentasHistory();
   });
 
   /* ── Insumos: add row ── */
@@ -3240,8 +3306,9 @@ function initEventListeners() {
       errEl.classList.add('show'); return;
     }
     errEl.classList.remove('show');
-    const note = document.getElementById('sell-note').value;
-    recordSale(p.id, colorName, qty, note);
+    const note     = document.getElementById('sell-note').value;
+    const dateVal  = document.getElementById('sell-date').value;
+    recordSale(p.id, colorName, qty, note, dateVal || null);
     if (window._sellReservationId) {
       removeReservation(p.id, colorName, window._sellReservationId);
       window._sellReservationId = null;
