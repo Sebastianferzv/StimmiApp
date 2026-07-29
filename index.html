@@ -398,6 +398,23 @@ tbody tr:hover td { background: #faf6ff; }
   background: linear-gradient(135deg, rgba(201,184,232,.2), rgba(248,187,217,.2));
   border-radius: 10px; margin-top: .5rem; color: var(--c-text);
 }
+.pay-toggle { display:flex; align-items:center; gap:.7rem; margin-bottom:1rem; }
+.pay-toggle__track {
+  width:46px; height:26px; border-radius:13px; background:var(--c-border);
+  border:none; padding:0; position:relative; cursor:pointer; transition:background .2s; flex-shrink:0;
+}
+.pay-toggle__track.paid { background:var(--c-positive); }
+.pay-toggle__thumb {
+  position:absolute; top:4px; left:4px; width:18px; height:18px; border-radius:50%;
+  background:#fff; transition:left .2s; pointer-events:none; box-shadow:0 1px 4px rgba(0,0,0,.18);
+}
+.pay-toggle__track.paid .pay-toggle__thumb { left:24px; }
+.pay-toggle__label { font-size:.88rem; font-weight:500; color:var(--c-text-soft); transition:color .2s; }
+.pay-toggle__label.paid { color:var(--c-positive); }
+.badge-paid { display:inline-block; font-size:.72rem; font-weight:600; padding:.15rem .5rem; border-radius:20px; }
+.badge-paid--yes { background:rgba(92,184,138,.15); color:var(--c-positive); }
+.badge-paid--no  { background:rgba(201,184,232,.18); color:var(--c-text-soft); cursor:pointer; border:1px solid var(--c-border); }
+.badge-paid--no:hover { background:rgba(92,184,138,.12); color:var(--c-positive); border-color:var(--c-positive); }
 .sell-res-chip {
   padding: .3rem .75rem; border-radius: 20px; border: 1.5px solid var(--c-primary);
   background: transparent; color: var(--c-text); font-size: .82rem; cursor: pointer;
@@ -618,6 +635,7 @@ tbody tr:hover td { background: #faf6ff; }
             <div class="balance-block">
               <label>Total Ganado</label>
               <div class="balance-value" id="bal-earned">$0</div>
+              <div class="balance-breakdown" id="bal-earned-pending" style="color:var(--c-text-soft)"></div>
             </div>
             <div class="balance-block balance-block--net" id="bal-net-block">
               <label>Balance Neto</label>
@@ -684,6 +702,7 @@ tbody tr:hover td { background: #faf6ff; }
             <div class="balance-block">
               <label>Total Ganado</label>
               <div class="balance-value" id="bal-earned-v">$0</div>
+              <div class="balance-breakdown" id="bal-earned-pending-v" style="color:var(--c-text-soft)"></div>
             </div>
             <div class="balance-block balance-block--net" id="bal-net-block-v">
               <label>Balance Neto</label>
@@ -731,6 +750,7 @@ tbody tr:hover td { background: #faf6ff; }
             <div class="balance-block">
               <label>Total Ganado</label>
               <div class="balance-value" id="bal-earned-i">$0</div>
+              <div class="balance-breakdown" id="bal-earned-pending-i" style="color:var(--c-text-soft)"></div>
             </div>
             <div class="balance-block balance-block--net" id="bal-net-block-i">
               <label>Balance Neto</label>
@@ -1079,6 +1099,12 @@ tbody tr:hover td { background: #faf6ff; }
       <div class="form-group">
         <label>Comentario <span style="font-weight:400;color:var(--c-text-soft)">(opcional)</span></label>
         <textarea id="sell-note" rows="2" style="resize:vertical" placeholder="Ej: cliente pagó en efectivo, envío pendiente…"></textarea>
+      </div>
+      <div class="pay-toggle" style="margin-top:.75rem">
+        <button type="button" class="pay-toggle__track" id="sell-paid-toggle">
+          <span class="pay-toggle__thumb"></span>
+        </button>
+        <span class="pay-toggle__label" id="sell-paid-label">Pendiente de pago</span>
       </div>
       <div class="form-actions">
         <button type="button" class="btn btn-ghost" id="sell-cancel">Cancelar</button>
@@ -1472,7 +1498,7 @@ function updateColorStock(productId, colorName, value) {
   if (c) { c.total = Math.max(0, parseInt(value) || 0); saveProducts(arr); }
 }
 
-function recordSale(productId, colorName, quantity, note = '', saleDate = null) {
+function recordSale(productId, colorName, quantity, note = '', saleDate = null, paid = true) {
   const arr = getProducts();
   const p = arr.find(p => p.id === productId);
   if (!p) return null;
@@ -1484,12 +1510,18 @@ function recordSale(productId, colorName, quantity, note = '', saleDate = null) 
     id: genId(), date: saleDate ? new Date(saleDate).toISOString() : new Date().toISOString(),
     productId, productName: p.name, color: colorName,
     quantity, pricePerUnit: p.price, total: quantity * p.price,
-    note: note.trim(),
+    note: note.trim(), paid,
   };
   const sales = getSales();
   sales.push(sale);
   saveSales(sales);
   return sale;
+}
+
+function markSalePaid(saleId) {
+  const sales = getSales();
+  const s = sales.find(s => s.id === saleId);
+  if (s) { s.paid = true; saveSales(sales); }
 }
 
 function deleteSale(saleId) {
@@ -2186,6 +2218,9 @@ function renderSellModal(p) {
   window._sellReservationId = null;
   renderSellReservations();
   updateSellSubtotal(p.price);
+  const tog = document.getElementById('sell-paid-toggle');
+  const lbl = document.getElementById('sell-paid-label');
+  if (tog) { tog.classList.remove('paid'); lbl.classList.remove('paid'); lbl.textContent = 'Pendiente de pago'; }
 }
 
 function renderSellReservations() {
@@ -2298,19 +2333,21 @@ function renderVentasHistory() {
     <thead><tr>
       <th data-sort-col="date" style="cursor:pointer;user-select:none;white-space:nowrap">Fecha${sortIcon('date')}</th>
       <th data-sort-col="product" style="cursor:pointer;user-select:none">Producto${sortIcon('product')}</th>
-      <th>Color</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th>
+      <th>Color</th><th>Cant.</th><th>Precio</th><th>Total</th><th>Pago</th><th></th>
     </tr></thead>
     <tbody>${sales.map(s => {
       const isPack = s.type === 'pack';
-      const nameLine = isPack
-        ? `📦 ${s.productName}`
-        : s.productName;
+      const nameLine = isPack ? `📦 ${s.productName}` : s.productName;
       const subLine = s.note
         ? `<br><span style="font-size:.76rem;color:var(--c-text-soft);font-style:italic">${s.note}</span>`
         : '';
       const colorLine = isPack
         ? `<span style="font-size:.76rem;color:var(--c-text-soft)">${s.packCharmQty} charms${s.packItems?.length ? ' + otros' : ''}</span>`
         : s.color;
+      const isPaid = s.paid !== false;
+      const payBadge = isPaid
+        ? `<span class="badge-paid badge-paid--yes">✓ Pagado</span>`
+        : `<button class="badge-paid badge-paid--no" data-mark-paid="${s.id}" title="Marcar como pagado">⏳ Pendiente</button>`;
       const actions = isPack
         ? `<button class="btn-icon" data-delete-sale="${s.id}" title="Eliminar" style="color:#e06c75">✕</button>`
         : `<button class="btn-icon" data-edit-sale="${s.id}" title="Editar">✏️</button>
@@ -2322,6 +2359,7 @@ function renderVentasHistory() {
         <td style="text-align:center">${s.quantity}</td>
         <td>${fmt(s.pricePerUnit)}</td>
         <td style="font-weight:700">${fmt(s.total)}</td>
+        <td style="white-space:nowrap">${payBadge}</td>
         <td style="white-space:nowrap">${actions}</td>
       </tr>`;
     }).join('')}</tbody>
@@ -2463,9 +2501,10 @@ function updateTransitBadge(count) {
 function renderBalance() {
   const purchasesTotal = getPurchases().reduce((s, p) => s + p.total, 0);
   const suppliesTotal  = getSupplies().reduce((s, s2) => s + s2.total, 0);
-  const spent  = purchasesTotal + suppliesTotal;
-  const earned = totalEarned();
-  const net    = earned - spent;
+  const spent   = purchasesTotal + suppliesTotal;
+  const earned  = totalEarned();
+  const pending = getSales().filter(s => s.paid === false).reduce((sum, s) => sum + s.total, 0);
+  const net     = earned - spent;
   const breakdown = suppliesTotal > 0 || purchasesTotal > 0
     ? `Inventario: ${fmt(purchasesTotal)}\nInsumos: ${fmt(suppliesTotal)}`
     : '';
@@ -2475,11 +2514,13 @@ function renderBalance() {
     const ne = document.getElementById(`bal-net${suf}`);
     const nb = document.getElementById(`bal-net-block${suf}`);
     const sd = document.getElementById(`bal-spent-detail${suf}`);
+    const ep = document.getElementById(`bal-earned-pending${suf}`);
     if (se) se.textContent = fmt(spent);
     if (ee) ee.textContent = fmt(earned);
     if (ne) ne.textContent = fmt(net);
     if (nb) { nb.classList.toggle('positive', net > 0); nb.classList.toggle('negative', net < 0); }
     if (sd) sd.innerHTML = breakdown.replace('\n', '<br>');
+    if (ep) ep.innerHTML = pending > 0 ? `(Pendiente: ${fmt(pending)})` : '';
   });
 }
 
@@ -3305,6 +3346,15 @@ function initEventListeners() {
   document.getElementById('sell-close').addEventListener('click', closeTopModal);
   document.getElementById('sell-cancel').addEventListener('click', closeTopModal);
 
+  /* ── Sell: payment toggle ── */
+  document.getElementById('sell-paid-toggle').addEventListener('click', () => {
+    const tog = document.getElementById('sell-paid-toggle');
+    const lbl = document.getElementById('sell-paid-label');
+    const nowPaid = tog.classList.toggle('paid');
+    lbl.classList.toggle('paid', nowPaid);
+    lbl.textContent = nowPaid ? 'Pagado' : 'Pendiente de pago';
+  });
+
   /* ── Sell: update subtotal + reservations on color/qty change ── */
   document.getElementById('sell-qty').addEventListener('input', () => {
     const p = getProductById(window._currentProductId);
@@ -3354,7 +3404,8 @@ function initEventListeners() {
     errEl.classList.remove('show');
     const note     = document.getElementById('sell-note').value;
     const dateVal  = document.getElementById('sell-date').value;
-    recordSale(p.id, colorName, qty, note, dateVal || null);
+    const paid     = document.getElementById('sell-paid-toggle').classList.contains('paid');
+    recordSale(p.id, colorName, qty, note, dateVal || null, paid);
     if (window._sellReservationId) {
       removeReservation(p.id, colorName, window._sellReservationId);
       window._sellReservationId = null;
@@ -3466,8 +3517,14 @@ function initEventListeners() {
     showToast('Compra actualizada ✓');
   });
 
-  /* ── Ventas: edit / delete (delegation) ── */
+  /* ── Ventas: mark paid / edit / delete (delegation) ── */
   document.getElementById('ventas-history').addEventListener('click', e => {
+    const paidBtn = e.target.closest('[data-mark-paid]');
+    if (paidBtn) {
+      markSalePaid(paidBtn.dataset.markPaid);
+      renderVentasHistory(); renderBalance();
+      return;
+    }
     const editBtn = e.target.closest('[data-edit-sale]');
     if (editBtn) {
       renderEditSaleModal(editBtn.dataset.editSale);
