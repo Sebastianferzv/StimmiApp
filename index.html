@@ -411,10 +411,13 @@ tbody tr:hover td { background: #faf6ff; }
 .pay-toggle__track.paid .pay-toggle__thumb { left:24px; }
 .pay-toggle__label { font-size:.88rem; font-weight:500; color:var(--c-text-soft); transition:color .2s; }
 .pay-toggle__label.paid { color:var(--c-positive); }
-.badge-paid { display:inline-block; font-size:.72rem; font-weight:600; padding:.15rem .5rem; border-radius:20px; }
-.badge-paid--yes { background:rgba(92,184,138,.15); color:var(--c-positive); }
-.badge-paid--no  { background:rgba(201,184,232,.18); color:var(--c-text-soft); cursor:pointer; border:1px solid var(--c-border); }
+.badge-paid { display:inline-block; font-size:.72rem; font-weight:600; padding:.15rem .5rem; border-radius:20px; cursor:pointer; border:1px solid transparent; transition:background .15s, color .15s, border-color .15s; }
+.badge-paid--yes { background:rgba(92,184,138,.15); color:var(--c-positive); border-color:rgba(92,184,138,.25); }
+.badge-paid--yes:hover { background:rgba(217,107,122,.1); color:var(--c-negative); border-color:rgba(217,107,122,.3); }
+.badge-paid--no  { background:rgba(201,184,232,.18); color:var(--c-text-soft); border:1px solid var(--c-border); }
 .badge-paid--no:hover { background:rgba(92,184,138,.12); color:var(--c-positive); border-color:var(--c-positive); }
+.color-select--highlight { border-color: var(--c-primary) !important; box-shadow: 0 0 0 3px rgba(201,184,232,.35); animation: pulse-color 1.8s ease-in-out 3; }
+@keyframes pulse-color { 0%,100% { box-shadow:0 0 0 3px rgba(201,184,232,.35); } 50% { box-shadow:0 0 0 5px rgba(201,184,232,.6); } }
 .sell-res-chip {
   padding: .3rem .75rem; border-radius: 20px; border: 1.5px solid var(--c-primary);
   background: transparent; color: var(--c-text); font-size: .82rem; cursor: pointer;
@@ -1518,10 +1521,10 @@ function recordSale(productId, colorName, quantity, note = '', saleDate = null, 
   return sale;
 }
 
-function markSalePaid(saleId) {
+function toggleSalePaid(saleId) {
   const sales = getSales();
   const s = sales.find(s => s.id === saleId);
-  if (s) { s.paid = true; saveSales(sales); }
+  if (s) { s.paid = s.paid === false ? true : false; saveSales(sales); }
 }
 
 function deleteSale(saleId) {
@@ -1687,7 +1690,7 @@ function removeReservation(productId, colorName, reservationId) {
 }
 function productTotalSold(p)     { return p.colors.reduce((s, c) => s + (c.sold || 0), 0); }
 function totalSpent()            { return getPurchases().reduce((s, p) => s + p.total, 0) + getSupplies().reduce((s, s2) => s + s2.total, 0); }
-function totalEarned()           { return getSales().reduce((s, s2) => s + s2.total, 0); }
+function totalEarned()           { return getSales().filter(s => s.paid !== false).reduce((s, s2) => s + s2.total, 0); }
 
 /* ── Data: Categories ── */
 function getCategories()     { return load(KEYS.categories); }
@@ -2214,6 +2217,7 @@ function renderSellModal(p) {
         return `<option value="${c.name}">${label}</option>`;
       }).join('')
     : '<option value="">Sin stock disponible</option>';
+  sel.classList.toggle('color-select--highlight', sellableColors.length > 1);
   document.querySelector('#form-sell button[type=submit]').disabled = !sellableColors.length;
   window._sellReservationId = null;
   renderSellReservations();
@@ -2346,8 +2350,8 @@ function renderVentasHistory() {
         : s.color;
       const isPaid = s.paid !== false;
       const payBadge = isPaid
-        ? `<span class="badge-paid badge-paid--yes">✓ Pagado</span>`
-        : `<button class="badge-paid badge-paid--no" data-mark-paid="${s.id}" title="Marcar como pagado">⏳ Pendiente</button>`;
+        ? `<button class="badge-paid badge-paid--yes" data-toggle-paid="${s.id}" title="Marcar como pendiente">✓ Pagado</button>`
+        : `<button class="badge-paid badge-paid--no" data-toggle-paid="${s.id}" title="Marcar como pagado">⏳ Pendiente</button>`;
       const actions = isPack
         ? `<button class="btn-icon" data-delete-sale="${s.id}" title="Eliminar" style="color:#e06c75">✕</button>`
         : `<button class="btn-icon" data-edit-sale="${s.id}" title="Editar">✏️</button>
@@ -2520,7 +2524,7 @@ function renderBalance() {
     if (ne) ne.textContent = fmt(net);
     if (nb) { nb.classList.toggle('positive', net > 0); nb.classList.toggle('negative', net < 0); }
     if (sd) sd.innerHTML = breakdown.replace('\n', '<br>');
-    if (ep) ep.innerHTML = pending > 0 ? `(Pendiente: ${fmt(pending)})` : '';
+    if (ep) ep.innerHTML = pending > 0 ? `(Pendiente: ${fmt(pending)} — Total: ${fmt(earned + pending)})` : '';
   });
 }
 
@@ -3360,7 +3364,8 @@ function initEventListeners() {
     const p = getProductById(window._currentProductId);
     if (p) updateSellSubtotal(p.price);
   });
-  document.getElementById('sell-color').addEventListener('input', () => {
+  document.getElementById('sell-color').addEventListener('change', () => {
+    document.getElementById('sell-color').classList.remove('color-select--highlight');
     window._sellReservationId = null;
     renderSellReservations();
     const p = getProductById(window._currentProductId);
@@ -3519,9 +3524,9 @@ function initEventListeners() {
 
   /* ── Ventas: mark paid / edit / delete (delegation) ── */
   document.getElementById('ventas-history').addEventListener('click', e => {
-    const paidBtn = e.target.closest('[data-mark-paid]');
+    const paidBtn = e.target.closest('[data-toggle-paid]');
     if (paidBtn) {
-      markSalePaid(paidBtn.dataset.markPaid);
+      toggleSalePaid(paidBtn.dataset.togglePaid);
       renderVentasHistory(); renderBalance();
       return;
     }
