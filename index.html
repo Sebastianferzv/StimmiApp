@@ -413,7 +413,7 @@ tbody tr:hover td { background: #faf6ff; }
 .pay-toggle__label.paid { color:var(--c-positive); }
 .badge-paid { display:inline-block; font-size:.72rem; font-weight:600; padding:.15rem .5rem; border-radius:20px; cursor:pointer; border:1px solid transparent; transition:background .15s, color .15s, border-color .15s; }
 .badge-paid--yes { background:rgba(92,184,138,.15); color:var(--c-positive); border-color:rgba(92,184,138,.25); }
-.badge-paid--yes:hover { background:rgba(217,107,122,.1); color:var(--c-negative); border-color:rgba(217,107,122,.3); }
+.badge-paid--yes:hover { background:rgba(92,184,138,.25); }
 .badge-paid--no  { background:rgba(201,184,232,.18); color:var(--c-text-soft); border:1px solid var(--c-border); }
 .badge-paid--no:hover { background:rgba(92,184,138,.12); color:var(--c-positive); border-color:var(--c-positive); }
 .color-select--highlight { border-color: var(--c-primary) !important; box-shadow: 0 0 0 3px rgba(201,184,232,.35); animation: pulse-color 1.8s ease-in-out 3; }
@@ -1174,6 +1174,12 @@ tbody tr:hover td { background: #faf6ff; }
         <label>Comentario <span style="font-weight:400;color:var(--c-text-soft)">(opcional)</span></label>
         <textarea id="edit-sale-note" rows="2" style="resize:vertical"></textarea>
       </div>
+      <div class="pay-toggle" style="margin-top:.75rem">
+        <button type="button" class="pay-toggle__track" id="edit-paid-toggle">
+          <span class="pay-toggle__thumb"></span>
+        </button>
+        <span class="pay-toggle__label" id="edit-paid-label">Pendiente de pago</span>
+      </div>
       <div class="form-actions">
         <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
         <button type="submit" class="btn btn-secondary">✓ Guardar cambios</button>
@@ -1543,7 +1549,7 @@ function deleteSale(saleId) {
   saveSales(sales);
 }
 
-function updateSale(saleId, { quantity, pricePerUnit, date, note }) {
+function updateSale(saleId, { quantity, pricePerUnit, date, note, paid }) {
   const sales = getSales();
   const sale = sales.find(s => s.id === saleId);
   if (!sale) return;
@@ -1562,6 +1568,7 @@ function updateSale(saleId, { quantity, pricePerUnit, date, note }) {
   sale.total        = quantity * pricePerUnit;
   sale.date         = date;
   sale.note         = (note || '').trim();
+  if (paid !== undefined) sale.paid = paid;
   saveSales(sales);
 }
 
@@ -2350,7 +2357,7 @@ function renderVentasHistory() {
         : s.color;
       const isPaid = s.paid !== false;
       const payBadge = isPaid
-        ? `<button class="badge-paid badge-paid--yes" data-toggle-paid="${s.id}" title="Marcar como pendiente">✓ Pagado</button>`
+        ? `<button class="badge-paid badge-paid--yes" data-edit-sale="${s.id}" title="Editar pago">✓ Pagado</button>`
         : `<button class="badge-paid badge-paid--no" data-toggle-paid="${s.id}" title="Marcar como pagado">⏳ Pendiente</button>`;
       const actions = isPack
         ? `<button class="btn-icon" data-delete-sale="${s.id}" title="Eliminar" style="color:#e06c75">✕</button>`
@@ -2437,6 +2444,12 @@ function renderEditSaleModal(saleId) {
   document.getElementById('edit-sale-price').value = sale.pricePerUnit;
   document.getElementById('edit-sale-note').value  = sale.note || '';
   document.getElementById('edit-sale-qty-err').classList.remove('show');
+  const isPaid = sale.paid !== false;
+  const tog = document.getElementById('edit-paid-toggle');
+  const lbl = document.getElementById('edit-paid-label');
+  tog.classList.toggle('paid', isPaid);
+  lbl.classList.toggle('paid', isPaid);
+  lbl.textContent = isPaid ? 'Pagado' : 'Pendiente de pago';
   updateEditSaleTotal();
 }
 
@@ -3553,6 +3566,15 @@ function initEventListeners() {
     }
   });
 
+  /* ── Edit sale: paid toggle ── */
+  document.getElementById('edit-paid-toggle').addEventListener('click', () => {
+    const tog = document.getElementById('edit-paid-toggle');
+    const lbl = document.getElementById('edit-paid-label');
+    const nowPaid = tog.classList.toggle('paid');
+    lbl.classList.toggle('paid', nowPaid);
+    lbl.textContent = nowPaid ? 'Pagado' : 'Pendiente de pago';
+  });
+
   /* ── Edit sale: live total ── */
   ['edit-sale-qty', 'edit-sale-price'].forEach(id => {
     document.getElementById(id).addEventListener('input', updateEditSaleTotal);
@@ -3570,7 +3592,8 @@ function initEventListeners() {
     if (qty < 1) { errEl.textContent = 'La cantidad debe ser al menos 1.'; errEl.classList.add('show'); return; }
     errEl.classList.remove('show');
     const note = document.getElementById('edit-sale-note').value;
-    updateSale(saleId, { quantity: qty, pricePerUnit: price, date: date ? new Date(date).toISOString() : new Date().toISOString(), note });
+    const paid = document.getElementById('edit-paid-toggle').classList.contains('paid');
+    updateSale(saleId, { quantity: qty, pricePerUnit: price, date: date ? new Date(date).toISOString() : new Date().toISOString(), note, paid });
     renderVentasHistory(); renderProductGrid(); renderBalance();
     closeTopModal();
     showToast('Venta actualizada ✓');
