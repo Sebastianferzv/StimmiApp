@@ -3708,6 +3708,7 @@ function initEventListeners() {
    INIT
    ================================================================ */
 function recalculateSoldCounts() {
+  if (localStorage.getItem('stimmi_sold_recalc_v1')) return;
   const products = getProducts();
   if (!products.length) return;
   products.forEach(p => p.colors.forEach(c => c.sold = 0));
@@ -3725,6 +3726,7 @@ function recalculateSoldCounts() {
     }
   });
   saveProducts(products);
+  localStorage.setItem('stimmi_sold_recalc_v1', '1');
 }
 
 function fixDenormalizedProductNames() {
