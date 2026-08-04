@@ -1457,6 +1457,7 @@ function updateProduct(productId, { name, price, imageUrl, sourceUrl, category, 
   const arr = getProducts();
   const p = arr.find(p => p.id === productId);
   if (!p) return;
+  const oldName = p.name;
   p.name      = name;
   p.price     = parseFloat(price) || 0;
   p.imageUrl  = imageUrl  || '';
@@ -1470,6 +1471,18 @@ function updateProduct(productId, { name, price, imageUrl, sourceUrl, category, 
     });
   }
   saveProducts(arr);
+  if (name !== oldName) {
+    const sales = getSales();
+    let salesChanged = false;
+    sales.forEach(s => { if (s.productId === productId) { s.productName = name; salesChanged = true; } });
+    if (salesChanged) saveSales(sales);
+    const purchases = getPurchases();
+    let purchasesChanged = false;
+    purchases.forEach(pu => {
+      (pu.items || []).forEach(it => { if (it.productId === productId) { it.productName = name; purchasesChanged = true; } });
+    });
+    if (purchasesChanged) savePurchases(purchases);
+  }
 }
 
 function deleteProduct(productId) {
@@ -3694,6 +3707,32 @@ function initEventListeners() {
 /* ================================================================
    INIT
    ================================================================ */
+function fixDenormalizedProductNames() {
+  const products = getProducts();
+  if (!products.length) return;
+  const nameById = Object.fromEntries(products.map(p => [p.id, p.name]));
+
+  const sales = getSales();
+  let salesDirty = false;
+  sales.forEach(s => {
+    if (s.productId && nameById[s.productId] && s.productName !== nameById[s.productId]) {
+      s.productName = nameById[s.productId]; salesDirty = true;
+    }
+  });
+  if (salesDirty) saveSales(sales);
+
+  const purchases = getPurchases();
+  let purchasesDirty = false;
+  purchases.forEach(pu => {
+    (pu.items || []).forEach(it => {
+      if (it.productId && nameById[it.productId] && it.productName !== nameById[it.productId]) {
+        it.productName = nameById[it.productId]; purchasesDirty = true;
+      }
+    });
+  });
+  if (purchasesDirty) savePurchases(purchases);
+}
+
 async function init() {
   // Show loading overlay while fetching cloud data
   const overlay = document.getElementById('loading-overlay');
@@ -3701,6 +3740,7 @@ async function init() {
   await initCloudData();
   if (overlay) overlay.style.display = 'none';
 
+  fixDenormalizedProductNames();
   addPurchaseItemRow();
   addSupplyItemRow();
   renderProductGrid();
