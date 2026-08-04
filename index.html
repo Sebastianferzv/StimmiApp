@@ -3707,27 +3707,6 @@ function initEventListeners() {
 /* ================================================================
    INIT
    ================================================================ */
-function recalculateSoldCounts() {
-  if (localStorage.getItem('stimmi_sold_recalc_v1')) return;
-  const products = getProducts();
-  if (!products.length) return;
-  products.forEach(p => p.colors.forEach(c => c.sold = 0));
-  getSales().forEach(s => {
-    if (s.type === 'pack') {
-      (s.packItems || []).forEach(item => {
-        const p = products.find(p => p.id === item.productId);
-        const c = p && p.colors.find(c => c.name === item.colorName);
-        if (c) c.sold += (item.quantity || 0);
-      });
-    } else if (s.productId) {
-      const p = products.find(p => p.id === s.productId);
-      const c = p && p.colors.find(c => c.name === s.color);
-      if (c) c.sold += (s.quantity || 0);
-    }
-  });
-  saveProducts(products);
-  localStorage.setItem('stimmi_sold_recalc_v1', '1');
-}
 
 function fixDenormalizedProductNames() {
   const products = getProducts();
@@ -3762,7 +3741,6 @@ async function init() {
   await initCloudData();
   if (overlay) overlay.style.display = 'none';
 
-  recalculateSoldCounts();
   fixDenormalizedProductNames();
   addPurchaseItemRow();
   addSupplyItemRow();
