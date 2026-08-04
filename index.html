@@ -195,6 +195,10 @@ main { padding: 2rem; max-width: 1200px; margin: 0 auto; }
   margin-bottom: .65rem;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.product-card--hidden { opacity: .5; }
+.product-card--hidden .product-card__img { filter: grayscale(.4); }
+.badge-hidden { display:inline-block; font-size:.68rem; font-weight:600; padding:.1rem .4rem; border-radius:20px; background:rgba(107,79,160,.1); color:var(--c-text-soft); margin-left:.35rem; vertical-align:middle; }
+.btn-show-hidden.active { background:var(--c-primary); color:var(--c-text); }
 .product-card__stats { display: flex; gap: .5rem; flex-wrap: wrap; }
 .stat {
   flex: 1; min-width: 0;
@@ -592,6 +596,7 @@ tbody tr:hover td { background: #faf6ff; }
   <section id="tab-inventario">
     <div class="tab-header">
       <h2>Inventario</h2>
+      <button class="btn btn-ghost btn-sm btn-show-hidden" id="btn-show-hidden">Ver ocultos</button>
       <button class="btn btn-primary btn-sm" id="btn-new-product-inventory">+ Nuevo producto</button>
     </div>
     <div id="product-grid" class="product-grid"></div>
@@ -906,6 +911,12 @@ tbody tr:hover td { background: #faf6ff; }
         <div class="field-error" id="ep-color-err" style="margin-top:.25rem"></div>
       </div>
 
+      <div class="pay-toggle" style="margin:.25rem 0 .75rem">
+        <button type="button" class="pay-toggle__track" id="ep-hidden-toggle">
+          <span class="pay-toggle__thumb"></span>
+        </button>
+        <span class="pay-toggle__label" id="ep-hidden-label">Visible en inventario</span>
+      </div>
       <div class="form-actions" style="justify-content:space-between;flex-wrap:wrap;gap:.5rem">
         <button type="button" class="btn btn-danger btn-sm" id="btn-ep-delete">🗑 Eliminar producto</button>
         <div style="display:flex;gap:.75rem">
@@ -1453,7 +1464,7 @@ function updateProductImage(productId, url) {
   if (p) { p.imageUrl = url; saveProducts(arr); }
 }
 
-function updateProduct(productId, { name, price, imageUrl, sourceUrl, category, colorTotals }) {
+function updateProduct(productId, { name, price, imageUrl, sourceUrl, category, colorTotals, hidden }) {
   const arr = getProducts();
   const p = arr.find(p => p.id === productId);
   if (!p) return;
@@ -1463,6 +1474,7 @@ function updateProduct(productId, { name, price, imageUrl, sourceUrl, category, 
   p.imageUrl  = imageUrl  || '';
   p.sourceUrl = sourceUrl || '';
   p.category  = category  || '';
+  p.hidden    = !!hidden;
   if (category) ensureCategory(category);
   if (colorTotals) {
     colorTotals.forEach(({ colorName, total }) => {
@@ -1826,15 +1838,17 @@ const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
    RENDER FUNCTIONS
    ================================================================ */
 
-function _productCard(p) {
+function _productCard(p, showHidden = false) {
   const avail    = productAvailable(p);
   const reserved = productTotalReserved(p);
   const sold     = productTotalSold(p);
   const img      = p.imageUrl || PLACEHOLDER;
-  return `<div class="product-card" data-id="${p.id}">
+  const hiddenClass = (showHidden && p.hidden) ? ' product-card--hidden' : '';
+  const hiddenBadge = (showHidden && p.hidden) ? '<span class="badge-hidden">Oculto</span>' : '';
+  return `<div class="product-card${hiddenClass}" data-id="${p.id}">
     <img class="product-card__img" src="${img}" alt="${p.name}" onerror="this.src='${PLACEHOLDER}'">
     <div class="product-card__body">
-      <div class="product-card__name" title="${p.name}">${p.name}</div>
+      <div class="product-card__name" title="${p.name}">${p.name}${hiddenBadge}</div>
       <div class="product-card__stats">
         <div class="stat"><label>En inventario</label><strong>${avail}</strong></div>
         <div class="stat"><label>Reservados</label><strong>${reserved}</strong></div>
@@ -1862,11 +1876,14 @@ function _categoryCard(catName, products, categories) {
 }
 
 function renderProductGrid() {
-  const products   = getProducts();
-  const categories = getCategories();
+  const allProducts = getProducts();
+  const categories  = getCategories();
   const grid  = document.getElementById('product-grid');
   const empty = document.getElementById('empty-inventory');
-  if (!products.length) {
+  const showHidden = !!window._showHidden;
+  const products = showHidden ? allProducts : allProducts.filter(p => !p.hidden);
+
+  if (!allProducts.length) {
     grid.style.display = 'none'; empty.style.display = 'block'; return;
   }
   grid.style.display = ''; empty.style.display = 'none';
@@ -1876,7 +1893,7 @@ function renderProductGrid() {
 
   grid.innerHTML =
     catNames.map(cat => _categoryCard(cat, products, categories)).join('') +
-    uncategorized.map(_productCard).join('');
+    uncategorized.map(p => _productCard(p, showHidden)).join('');
 }
 
 /* ── Pack modal ── */
@@ -2115,6 +2132,12 @@ function renderEditModal(productId) {
   document.getElementById('ep-new-color').value = '';
   document.getElementById('ep-color-err').classList.remove('show');
   document.getElementById('ep-name-err').classList.remove('show');
+  const isHidden = !!p.hidden;
+  const htog = document.getElementById('ep-hidden-toggle');
+  const hlbl = document.getElementById('ep-hidden-label');
+  htog.classList.toggle('paid', isHidden);
+  hlbl.classList.toggle('paid', isHidden);
+  hlbl.textContent = isHidden ? 'Oculto en inventario' : 'Visible en inventario';
   renderEditColorList(productId);
 
   // File upload for image
@@ -3166,6 +3189,24 @@ function initEventListeners() {
     showToast(`"${p.name}" quitado de la carpeta`);
   });
 
+  /* ── Show hidden toggle ── */
+  document.getElementById('btn-show-hidden').addEventListener('click', () => {
+    window._showHidden = !window._showHidden;
+    const btn = document.getElementById('btn-show-hidden');
+    btn.classList.toggle('active', window._showHidden);
+    btn.textContent = window._showHidden ? 'Ver activos' : 'Ver ocultos';
+    renderProductGrid();
+  });
+
+  /* ── Edit product: hidden toggle ── */
+  document.getElementById('ep-hidden-toggle').addEventListener('click', () => {
+    const tog = document.getElementById('ep-hidden-toggle');
+    const lbl = document.getElementById('ep-hidden-label');
+    const nowHidden = tog.classList.toggle('paid');
+    lbl.classList.toggle('paid', nowHidden);
+    lbl.textContent = nowHidden ? 'Oculto en inventario' : 'Visible en inventario';
+  });
+
   /* ── New product button in inventory header ── */
   document.getElementById('btn-new-product-inventory').addEventListener('click', () => {
     document.getElementById('form-add-product').reset();
@@ -3222,6 +3263,7 @@ function initEventListeners() {
       sourceUrl:   document.getElementById('ep-source').value.trim(),
       category:    document.getElementById('ep-category').value.trim(),
       colorTotals: colorTotals.length ? colorTotals : undefined,
+      hidden:      document.getElementById('ep-hidden-toggle').classList.contains('paid'),
     });
     renderProductGrid();
     renderProductDetail(id);
