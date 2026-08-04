@@ -454,6 +454,14 @@ tbody tr:hover td { background: #faf6ff; }
 }
 .supply-item-row input:focus { border-color: var(--c-primary); }
 .finanzas-sections { display: flex; flex-direction: column; gap: 2rem; }
+.graficos-card {
+  background: var(--c-white); border-radius: var(--r-card);
+  box-shadow: var(--shadow-card); margin-bottom: 1.25rem; overflow: hidden;
+}
+.graficos-card__header { padding: 1rem 1.5rem .6rem; border-bottom: 1.5px solid var(--c-bg); }
+.graficos-card__header h3 { font-size: 1rem; font-weight: 700; margin: 0; }
+.graficos-card__body { padding: 1.25rem 1.5rem 1.5rem; overflow-x: auto; }
+.chart-empty { text-align:center; color: var(--c-text-soft); font-size: .88rem; padding: 2rem 0; }
 .finanzas-card {
   background: var(--c-white); border-radius: var(--r-card);
   box-shadow: var(--shadow-card); overflow: hidden;
@@ -588,6 +596,7 @@ tbody tr:hover td { background: #faf6ff; }
 <nav>
   <button class="nav-tab active" data-tab="inventario">📦 Inventario</button>
   <button class="nav-tab" data-tab="finanzas">💰 Finanzas</button>
+  <button class="nav-tab" data-tab="graficos">📊 Gráficos</button>
   <button class="nav-tab" data-tab="transito" id="nav-transito" style="margin-left:auto">🚚 En tránsito</button>
 </nav>
 
@@ -811,6 +820,44 @@ tbody tr:hover td { background: #faf6ff; }
     </div>
   </section>
 </main>
+
+<!-- ── Tab Gráficos ── -->
+<section id="tab-graficos" style="display:none">
+  <div class="tab-header"><h2>Gráficos</h2></div>
+
+  <div class="graficos-card">
+    <div class="graficos-card__header"><h3>📈 Recuperación de inversión</h3></div>
+    <div class="graficos-card__body">
+      <div id="chart-recovery"></div>
+      <p id="chart-recovery-summary" style="text-align:center;margin-top:.85rem;font-size:.9rem;color:var(--c-text-soft);font-weight:500"></p>
+    </div>
+  </div>
+
+  <div class="graficos-card" id="split-config-card" style="display:none">
+    <div class="graficos-card__header"><h3>⚖️ Distribución de ganancias</h3></div>
+    <div class="graficos-card__body">
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <span style="font-size:.88rem;white-space:nowrap;color:var(--c-text-soft)">Tu ganancia: <strong id="split-pct-label" style="color:var(--c-text)">20%</strong></span>
+        <input type="range" id="split-slider" min="0" max="100" value="20" style="flex:1;min-width:120px;accent-color:var(--c-primary)">
+        <span style="font-size:.88rem;white-space:nowrap;color:var(--c-text-soft)">Reinversión: <strong id="split-reinv-label" style="color:var(--c-text)">80%</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="graficos-card">
+    <div class="graficos-card__header"><h3>📅 Ventas por mes</h3></div>
+    <div class="graficos-card__body">
+      <div id="chart-monthly"></div>
+    </div>
+  </div>
+
+  <div class="graficos-card">
+    <div class="graficos-card__header"><h3>🏆 Top productos por ingresos</h3></div>
+    <div class="graficos-card__body">
+      <div id="chart-top-products"></div>
+    </div>
+  </div>
+</section>
 
 <!-- ── Modal overlay ── -->
 <div id="modal-overlay"></div>
@@ -2885,6 +2932,8 @@ function initEventListeners() {
       document.getElementById('tab-inventario').style.display = tab === 'inventario' ? '' : 'none';
       document.getElementById('tab-transito').style.display   = tab === 'transito'   ? '' : 'none';
       document.getElementById('tab-finanzas').style.display   = tab === 'finanzas'   ? '' : 'none';
+      document.getElementById('tab-graficos').style.display   = tab === 'graficos'   ? '' : 'none';
+      if (tab === 'graficos') renderGraficos();
       if (tab === 'finanzas') {
         const sub = window._lastFinanzasSubtab || 'compras';
         document.querySelectorAll('.finanzas-subtab').forEach(b => b.classList.toggle('active', b.dataset.subtab === sub));
@@ -3187,6 +3236,15 @@ function initEventListeners() {
     renderCategoryContents(window._packCategory || '');
     renderProductGrid();
     showToast(`"${p.name}" quitado de la carpeta`);
+  });
+
+  /* ── Gráficos: split slider ── */
+  document.getElementById('split-slider').addEventListener('input', function() {
+    const pct = parseInt(this.value);
+    localStorage.setItem('stimmi_split_pct', pct);
+    document.getElementById('split-pct-label').textContent   = pct + '%';
+    document.getElementById('split-reinv-label').textContent = (100 - pct) + '%';
+    renderRecoveryChart(totalSpent(), totalEarned(), Math.max(0, totalEarned() - totalSpent()), pct);
   });
 
   /* ── Show hidden toggle ── */
@@ -3744,6 +3802,160 @@ function initEventListeners() {
     renderReservationsModal(productId, colorName, { maxQty, transitTotal });
     openModal('modal-reservations');
   });
+}
+
+/* ================================================================
+   GRÁFICOS
+   ================================================================ */
+function getSplitPct() {
+  return parseInt(localStorage.getItem('stimmi_split_pct') || '20');
+}
+
+function renderGraficos() {
+  const spent    = totalSpent();
+  const earned   = totalEarned();
+  const surplus  = Math.max(0, earned - spent);
+  const splitPct = getSplitPct();
+
+  document.getElementById('split-config-card').style.display = surplus > 0 ? '' : 'none';
+  const slider = document.getElementById('split-slider');
+  slider.value = splitPct;
+  document.getElementById('split-pct-label').textContent   = splitPct + '%';
+  document.getElementById('split-reinv-label').textContent = (100 - splitPct) + '%';
+
+  renderRecoveryChart(spent, earned, surplus, splitPct);
+  renderMonthlyChart();
+  renderTopProductsChart();
+}
+
+function renderRecoveryChart(spent, earned, surplus, splitPct) {
+  const el    = document.getElementById('chart-recovery');
+  const sumEl = document.getElementById('chart-recovery-summary');
+
+  const W = 80, GAP = 28, PAD_L = 10, PAD_TOP = 28, PAD_BOT = 56, H = 200;
+  const hasSurplus = surplus > 0;
+  const gain  = surplus * splitPct / 100;
+  const reinv = surplus - gain;
+
+  const bars = hasSurplus
+    ? [
+        { label: 'Invertido',   val: spent,  color: '#C9B8E8' },
+        { label: 'Recuperado',  val: spent,  color: '#5cb88a' },
+        { label: 'Ganancia',    val: gain,   color: '#F8BBD9' },
+        { label: 'Reinversión', val: reinv,  color: '#a07cc8' },
+      ]
+    : [
+        { label: 'Invertido', val: spent,  color: '#C9B8E8' },
+        { label: 'Ganado',    val: earned, color: '#5cb88a' },
+      ];
+
+  const maxVal = hasSurplus
+    ? Math.max(spent, gain, reinv, 1)
+    : Math.max(spent, earned, 1);
+
+  const totalW = PAD_L * 2 + bars.length * W + (bars.length - 1) * GAP;
+  const svgH   = H + PAD_TOP + PAD_BOT;
+
+  const barH = v => Math.max(2, Math.round((v / maxVal) * H));
+  const barY = v => PAD_TOP + (H - barH(v));
+  const barX = i => PAD_L + i * (W + GAP);
+
+  const spentLineY = barY(spent);
+
+  const svgBars = bars.map((b, i) => {
+    const bh = barH(b.val);
+    const bx = barX(i);
+    const by = barY(b.val);
+    const vl = fmt(b.val);
+    const fs = vl.length > 9 ? '.58rem' : '.66rem';
+    return `
+      <rect x="${bx}" y="${by}" width="${W}" height="${bh}" rx="6" fill="${b.color}"/>
+      <text x="${bx + W/2}" y="${by - 6}" text-anchor="middle" font-size="${fs}" fill="#6B4FA0" font-weight="600">${vl}</text>
+      <text x="${bx + W/2}" y="${svgH - PAD_BOT + 18}" text-anchor="middle" font-size=".72rem" fill="#a07cc8" font-weight="500">${b.label}</text>`;
+  }).join('');
+
+  const dashLine = `<line x1="${PAD_L}" y1="${spentLineY}" x2="${totalW - PAD_L}" y2="${spentLineY}" stroke="#C9B8E8" stroke-width="1.5" stroke-dasharray="5,4" opacity=".7"/>`;
+
+  el.innerHTML = `<svg viewBox="0 0 ${totalW} ${svgH}" style="width:100%;max-width:${totalW}px;display:block;margin:0 auto">
+    ${dashLine}${svgBars}
+  </svg>`;
+
+  if (!hasSurplus && spent > 0) {
+    const pct = Math.min(100, Math.round((earned / spent) * 100));
+    sumEl.textContent = `Llevas el ${pct}% del camino — faltan ${fmt(spent - earned)} para recuperar la inversión`;
+  } else if (hasSurplus) {
+    sumEl.textContent = `¡Inversión recuperada! Superávit de ${fmt(surplus)}`;
+  } else {
+    sumEl.textContent = spent === 0 ? 'Registra compras para ver el progreso' : '';
+  }
+}
+
+function renderMonthlyChart() {
+  const el    = document.getElementById('chart-monthly');
+  const sales = getSales().filter(s => s.paid !== false && s.type !== 'pack');
+
+  const now    = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d   = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const lbl = d.toLocaleDateString('es-CL', { month: 'short', year: '2-digit' }).replace('.', '');
+    months.push({ key, lbl, total: 0 });
+  }
+  sales.forEach(s => {
+    const m = months.find(m => m.key === s.date.slice(0, 7));
+    if (m) m.total += s.total;
+  });
+
+  if (sales.length === 0) { el.innerHTML = '<div class="chart-empty">Sin ventas registradas aún</div>'; return; }
+
+  const maxVal = Math.max(...months.map(m => m.total), 1);
+  const W = 52, GAP = 18, PAD_L = 8, PAD_TOP = 22, PAD_BOT = 48, H = 140;
+  const totalW = PAD_L * 2 + months.length * W + (months.length - 1) * GAP;
+  const svgH   = H + PAD_TOP + PAD_BOT;
+
+  const bars = months.map((m, i) => {
+    const bh  = Math.max(2, Math.round((m.total / maxVal) * H));
+    const bx  = PAD_L + i * (W + GAP);
+    const by  = PAD_TOP + H - bh;
+    const vl  = m.total > 0 ? fmt(m.total) : '';
+    const fs  = vl.length > 9 ? '.52rem' : '.58rem';
+    return `
+      <rect x="${bx}" y="${by}" width="${W}" height="${bh}" rx="5" fill="#5cb88a" opacity="${m.total > 0 ? '1' : '.18'}"/>
+      ${vl ? `<text x="${bx + W/2}" y="${by - 5}" text-anchor="middle" font-size="${fs}" fill="#6B4FA0" font-weight="600">${vl}</text>` : ''}
+      <text x="${bx + W/2}" y="${svgH - PAD_BOT + 18}" text-anchor="middle" font-size=".68rem" fill="#a07cc8">${m.lbl}</text>`;
+  }).join('');
+
+  el.innerHTML = `<svg viewBox="0 0 ${totalW} ${svgH}" style="width:100%;max-width:${totalW}px;display:block;margin:0 auto">${bars}</svg>`;
+}
+
+function renderTopProductsChart() {
+  const el    = document.getElementById('chart-top-products');
+  const sales = getSales().filter(s => s.paid !== false && s.type !== 'pack');
+
+  const byProduct = {};
+  sales.forEach(s => { byProduct[s.productName] = (byProduct[s.productName] || 0) + s.total; });
+  const sorted = Object.entries(byProduct).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  if (!sorted.length) { el.innerHTML = '<div class="chart-empty">Sin ventas registradas aún</div>'; return; }
+
+  const maxVal  = sorted[0][1];
+  const BAR_H   = 10, ROW_H = 36, PAD_TOP = 4;
+  const colors  = ['#C9B8E8', '#b8a8d8', '#a797c8', '#9787b8', '#8676a8'];
+  const SVG_W   = 420;
+  const totalH  = PAD_TOP + sorted.length * ROW_H;
+
+  const rows = sorted.map(([name, val], i) => {
+    const bw   = Math.max(4, Math.round((val / maxVal) * (SVG_W - 16)));
+    const by   = PAD_TOP + i * ROW_H;
+    const disp = name.length > 26 ? name.slice(0, 25) + '…' : name;
+    return `
+      <text x="0" y="${by + 13}" font-size=".75rem" fill="#6B4FA0" font-weight="500">${disp}</text>
+      <rect x="0" y="${by + 18}" width="${bw}" height="${BAR_H}" rx="4" fill="${colors[i]}"/>
+      <text x="${bw + 6}" y="${by + 27}" font-size=".66rem" fill="#a07cc8" font-weight="600">${fmt(val)}</text>`;
+  }).join('');
+
+  el.innerHTML = `<svg viewBox="0 0 ${SVG_W} ${totalH}" style="width:100%;max-width:${SVG_W}px;display:block;margin:0 auto">${rows}</svg>`;
 }
 
 /* ================================================================
