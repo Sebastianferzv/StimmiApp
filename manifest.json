@@ -1,7 +1,7 @@
 {
-  "name": "stimmilab",
-  "short_name": "stimmilab",
-  "description": "Gestión de inventario, ventas y finanzas de stimmilab",
+  "name": "stimmiapp",
+  "short_name": "stimmiapp",
+  "description": "Gestión de inventario, ventas y finanzas de stimmiapp",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -9,9 +9,9 @@
   "theme_color": "#C9B8E8",
   "icons": [
     {
-      "src": "/logo.jpg",
+      "src": "/logo.png",
       "sizes": "any",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any"
     },
     {

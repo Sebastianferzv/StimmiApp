@@ -7,11 +7,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="stimmilab">
+<meta name="apple-mobile-web-app-title" content="stimmiapp">
 <link rel="manifest" href="/manifest.json">
-<link rel="icon" href="/logo.jpg" type="image/jpeg">
-<link rel="apple-touch-icon" href="/logo.jpg">
-<title>stimmilab</title>
+<link rel="icon" href="/logo.png" type="image/png">
+<link rel="apple-touch-icon" href="/logo.png">
+<title>stimmiapp</title>
 <style>
 /* ── Variables ─────────────────────────────────────────────── */
 :root {
@@ -584,9 +584,9 @@ tbody tr:hover td { background: #faf6ff; }
 <div id="storage-warning" style="display:none">⚠️ localStorage no disponible — los datos no se guardarán al cerrar.</div>
 
 <header>
-  <img class="header-logo" src="/logo.jpg" alt="stimmilab">
+  <img class="header-logo" src="/logo.png" alt="stimmiapp">
   <div>
-    <div class="header-title">stimmilab</div>
+    <div class="header-title">stimmiapp</div>
     <div class="header-sub">gestión de tienda</div>
   </div>
   <div class="header-spacer"></div>
@@ -855,6 +855,14 @@ tbody tr:hover td { background: #faf6ff; }
     <div class="graficos-card__header"><h3>🏆 Top productos por ingresos</h3></div>
     <div class="graficos-card__body">
       <div id="chart-top-products"></div>
+    </div>
+  </div>
+
+  <div class="graficos-card">
+    <div class="graficos-card__header"><h3>💰 Margen de ganancia por producto</h3></div>
+    <div class="graficos-card__body">
+      <p style="font-size:.78rem;color:var(--c-text-soft);margin-bottom:.85rem">Basado en el precio de venta y el costo promedio de compra registrado.</p>
+      <div id="chart-margin"></div>
     </div>
   </div>
 </section>
@@ -3826,6 +3834,7 @@ function renderGraficos() {
   renderRecoveryChart(spent, earned, surplus, splitPct);
   renderMonthlyChart();
   renderTopProductsChart();
+  renderMarginChart();
 }
 
 function renderRecoveryChart(spent, earned, surplus, splitPct) {
@@ -3927,6 +3936,58 @@ function renderMonthlyChart() {
   }).join('');
 
   el.innerHTML = `<svg viewBox="0 0 ${totalW} ${svgH}" style="width:100%;max-width:${totalW}px;display:block;margin:0 auto">${bars}</svg>`;
+}
+
+function renderMarginChart() {
+  const el        = document.getElementById('chart-margin');
+  const products  = getProducts().filter(p => p.price > 0);
+  const purchases = getPurchases();
+
+  const costByProduct = {};
+  purchases.forEach(pu => {
+    (pu.items || []).forEach(it => {
+      if (!it.productId || !it.unitCost) return;
+      if (!costByProduct[it.productId]) costByProduct[it.productId] = { totalCost: 0, totalQty: 0 };
+      costByProduct[it.productId].totalCost += it.unitCost * (it.quantity || 1);
+      costByProduct[it.productId].totalQty  += (it.quantity || 1);
+    });
+  });
+
+  const margins = products
+    .filter(p => costByProduct[p.id] && costByProduct[p.id].totalQty > 0)
+    .map(p => {
+      const { totalCost, totalQty } = costByProduct[p.id];
+      const avgCost   = totalCost / totalQty;
+      const marginAmt = p.price - avgCost;
+      const marginPct = (marginAmt / p.price) * 100;
+      return { name: p.name, price: p.price, avgCost, marginAmt, marginPct };
+    })
+    .sort((a, b) => b.marginPct - a.marginPct);
+
+  if (!margins.length) {
+    el.innerHTML = '<div class="chart-empty">Necesitas productos con precio de venta y compras registradas</div>';
+    return;
+  }
+
+  const maxAbs = Math.max(...margins.map(m => Math.abs(m.marginPct)), 1);
+  const ROW_H = 44, PAD_TOP = 4, SVG_W = 420, BAR_AREA = SVG_W * 0.55, BAR_H = 10;
+  const totalH = PAD_TOP + margins.length * ROW_H;
+
+  const rows = margins.map((m, i) => {
+    const bw       = Math.max(4, Math.round((Math.abs(m.marginPct) / maxAbs) * BAR_AREA));
+    const by       = PAD_TOP + i * ROW_H;
+    const color    = m.marginPct >= 0 ? '#5cb88a' : '#d96b7a';
+    const pctLbl   = `${m.marginPct >= 0 ? '+' : ''}${Math.round(m.marginPct)}%`;
+    const amtLbl   = `${m.marginAmt >= 0 ? '+' : ''}${fmt(Math.round(m.marginAmt))} por unidad`;
+    const disp     = m.name.length > 24 ? m.name.slice(0, 23) + '…' : m.name;
+    return `
+      <text x="0" y="${by + 13}" font-size=".75rem" fill="#6B4FA0" font-weight="500">${disp}</text>
+      <rect x="0" y="${by + 19}" width="${bw}" height="${BAR_H}" rx="4" fill="${color}"/>
+      <text x="${bw + 6}" y="${by + 28}" font-size=".72rem" fill="${color}" font-weight="700">${pctLbl}</text>
+      <text x="${bw + 48}" y="${by + 28}" font-size=".65rem" fill="#a07cc8">${amtLbl}</text>`;
+  }).join('');
+
+  el.innerHTML = `<svg viewBox="0 0 ${SVG_W} ${totalH}" style="width:100%;max-width:${SVG_W}px;display:block;margin:0 auto">${rows}</svg>`;
 }
 
 function renderTopProductsChart() {

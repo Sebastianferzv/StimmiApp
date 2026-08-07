@@ -1,5 +1,5 @@
-const CACHE = 'stimmilab-v2';
-const STATIC = ['/logo.jpg', '/icon.svg', '/manifest.json'];
+const CACHE = 'stimmilab-v3';
+const STATIC = ['/logo.png', '/icon.svg', '/manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC)));
@@ -38,7 +38,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Static assets (icon, manifest): cache-first
+  // Static assets: cache-first
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
       const clone = res.clone();
