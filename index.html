@@ -564,6 +564,9 @@ tbody tr:hover td { background: #faf6ff; }
 @media (max-width: 700px) {
   main { padding: 1rem; }
   header { padding: 1rem 1.25rem; }
+  nav { padding: 0 .5rem; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  nav::-webkit-scrollbar { display: none; }
+  .nav-tab { padding: .75rem .85rem; font-size: .82rem; white-space: nowrap; flex-shrink: 0; }
   .balance-grid { grid-template-columns: 1fr; }
   .purchase-item-row { grid-template-columns: 1fr 1fr auto; }
   .purchase-item-row select:nth-child(1) { grid-column: 1 / -1; }
