@@ -746,6 +746,10 @@ tbody tr:hover td { background: #faf6ff; }
               <label style="font-size:.73rem;font-weight:600;color:var(--c-text-soft)">Hasta</label>
               <input type="date" id="vf-to" style="padding:.35rem .5rem;border:1.5px solid var(--c-border);border-radius:8px;font-size:.82rem;color:var(--c-text);background:var(--c-white);outline:none">
             </div>
+            <div style="display:flex;flex-direction:column;gap:.2rem;flex:1;min-width:130px">
+              <label style="font-size:.73rem;font-weight:600;color:var(--c-text-soft)">Producto</label>
+              <select id="vf-product" style="padding:.35rem .5rem;border:1.5px solid var(--c-border);border-radius:8px;font-size:.82rem;color:var(--c-text);background:var(--c-white);outline:none;width:100%"><option value="">Todos</option></select>
+            </div>
             <button type="button" id="btn-clear-ventas-filter" class="btn btn-ghost btn-sm" style="white-space:nowrap;align-self:flex-end">✕ Limpiar</button>
           </div>
           <div class="history-table-wrap" id="ventas-history"></div>
@@ -1333,6 +1337,12 @@ function setCloudBtn(icon, title) {
   if (btn) { btn.textContent = icon; btn.title = title; btn.style.opacity = icon === '☁️' ? '.35' : '1'; }
 }
 
+function _mergeById(cloud, local) {
+  const ids = new Set(cloud.map(x => x.id));
+  const missing = local.filter(x => x.id && !ids.has(x.id));
+  return missing.length ? [...cloud, ...missing] : cloud;
+}
+
 async function cloudPut(key, value) {
   const r = await fetch('/api/data', {
     method: 'PUT',
@@ -1376,9 +1386,18 @@ async function initCloudData() {
         return;
       }
     }
-    _mem[KEYS.products]      = products;
-    _mem[KEYS.purchases]     = purchases;
-    _mem[KEYS.sales]         = sales;
+    const lsProds = storageOK ? JSON.parse(localStorage.getItem(KEYS.products)  || '[]') : [];
+    const lsPurs  = storageOK ? JSON.parse(localStorage.getItem(KEYS.purchases) || '[]') : [];
+    const lsSales = storageOK ? JSON.parse(localStorage.getItem(KEYS.sales)     || '[]') : [];
+    const mProds  = _mergeById(products,  lsProds);
+    const mPurs   = _mergeById(purchases, lsPurs);
+    const mSales  = _mergeById(sales,     lsSales);
+    if (mProds.length  > products.length)  cloudPut(KEYS.products,  mProds).catch(() => {});
+    if (mPurs.length   > purchases.length) cloudPut(KEYS.purchases, mPurs).catch(() => {});
+    if (mSales.length  > sales.length)     cloudPut(KEYS.sales,     mSales).catch(() => {});
+    _mem[KEYS.products]      = mProds;
+    _mem[KEYS.purchases]     = mPurs;
+    _mem[KEYS.sales]         = mSales;
     _mem[KEYS.categories]    = categories;
     _mem[KEYS.packs]         = packs;
     _mem[KEYS.packTemplates] = packTemplates;
