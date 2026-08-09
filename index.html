@@ -4054,8 +4054,9 @@ function renderTopProductsChart() {
 
 function fixDenormalizedProductNames() {
   const products = getProducts();
-  if (!products.length) return;
+  if (!products.length) return false;
   const nameById = Object.fromEntries(products.map(p => [p.id, p.name]));
+  let anyDirty = false;
 
   const sales = getSales();
   let salesDirty = false;
@@ -4064,7 +4065,7 @@ function fixDenormalizedProductNames() {
       s.productName = nameById[s.productId]; salesDirty = true;
     }
   });
-  if (salesDirty) saveSales(sales);
+  if (salesDirty) { saveSales(sales); anyDirty = true; }
 
   const purchases = getPurchases();
   let purchasesDirty = false;
@@ -4075,7 +4076,8 @@ function fixDenormalizedProductNames() {
       }
     });
   });
-  if (purchasesDirty) savePurchases(purchases);
+  if (purchasesDirty) { savePurchases(purchases); anyDirty = true; }
+  return anyDirty;
 }
 
 async function init() {
@@ -4085,7 +4087,11 @@ async function init() {
   await initCloudData();
   if (overlay) overlay.style.display = 'none';
 
-  fixDenormalizedProductNames();
+  const namesFixed = fixDenormalizedProductNames();
+  if (namesFixed && _cloudOK) {
+    cloudPut(KEYS.sales,     getSales()).catch(() => {});
+    cloudPut(KEYS.purchases, getPurchases()).catch(() => {});
+  }
   addPurchaseItemRow();
   addSupplyItemRow();
   renderProductGrid();
