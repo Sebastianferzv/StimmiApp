@@ -2944,6 +2944,7 @@ function initEventListeners() {
       document.getElementById('tab-graficos').style.display   = tab === 'graficos'   ? '' : 'none';
       if (tab === 'graficos') renderGraficos();
       if (tab === 'finanzas') {
+        fixDenormalizedProductNames();
         const sub = window._lastFinanzasSubtab || 'compras';
         document.querySelectorAll('.finanzas-subtab').forEach(b => b.classList.toggle('active', b.dataset.subtab === sub));
         document.getElementById('subtab-compras').style.display = sub === 'compras' ? '' : 'none';
