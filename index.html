@@ -734,6 +734,10 @@ tbody tr:hover td { background: #faf6ff; }
         <div class="finanzas-card__header"><h3>💸 Historial de Ventas</h3></div>
         <div class="finanzas-card__body">
           <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:.75rem;padding-bottom:.75rem;border-bottom:1.5px solid var(--c-bg)">
+            <div style="display:flex;flex-direction:column;gap:.2rem;flex:1;min-width:160px">
+              <label style="font-size:.73rem;font-weight:600;color:var(--c-text-soft)">Buscar</label>
+              <input type="search" id="vf-search" placeholder="Producto, color, nota…" style="padding:.35rem .5rem;border:1.5px solid var(--c-border);border-radius:8px;font-size:.82rem;color:var(--c-text);background:var(--c-white);outline:none;width:100%">
+            </div>
             <div style="display:flex;flex-direction:column;gap:.2rem">
               <label style="font-size:.73rem;font-weight:600;color:var(--c-text-soft)">Desde</label>
               <input type="date" id="vf-from" style="padding:.35rem .5rem;border:1.5px solid var(--c-border);border-radius:8px;font-size:.82rem;color:var(--c-text);background:var(--c-white);outline:none">
@@ -741,10 +745,6 @@ tbody tr:hover td { background: #faf6ff; }
             <div style="display:flex;flex-direction:column;gap:.2rem">
               <label style="font-size:.73rem;font-weight:600;color:var(--c-text-soft)">Hasta</label>
               <input type="date" id="vf-to" style="padding:.35rem .5rem;border:1.5px solid var(--c-border);border-radius:8px;font-size:.82rem;color:var(--c-text);background:var(--c-white);outline:none">
-            </div>
-            <div style="display:flex;flex-direction:column;gap:.2rem;flex:1;min-width:130px">
-              <label style="font-size:.73rem;font-weight:600;color:var(--c-text-soft)">Producto</label>
-              <select id="vf-product" style="padding:.35rem .5rem;border:1.5px solid var(--c-border);border-radius:8px;font-size:.82rem;color:var(--c-text);background:var(--c-white);outline:none;width:100%"><option value="">Todos</option></select>
             </div>
             <button type="button" id="btn-clear-ventas-filter" class="btn btn-ghost btn-sm" style="white-space:nowrap;align-self:flex-end">✕ Limpiar</button>
           </div>
@@ -2400,15 +2400,21 @@ function renderVentasHistory() {
   }
 
   // Read filters
-  const fromVal = document.getElementById('vf-from')?.value || '';
-  const toVal   = document.getElementById('vf-to')?.value   || '';
-  const prodVal = prodSel?.value || '';
+  const fromVal   = document.getElementById('vf-from')?.value || '';
+  const toVal     = document.getElementById('vf-to')?.value   || '';
+  const prodVal   = prodSel?.value || '';
+  const searchVal = (document.getElementById('vf-search')?.value || '').toLowerCase().trim();
 
   // Apply filters
   let sales = allSales;
-  if (fromVal) sales = sales.filter(s => s.date.slice(0, 10) >= fromVal);
-  if (toVal)   sales = sales.filter(s => s.date.slice(0, 10) <= toVal);
-  if (prodVal) sales = sales.filter(s => s.productName === prodVal);
+  if (fromVal)   sales = sales.filter(s => s.date.slice(0, 10) >= fromVal);
+  if (toVal)     sales = sales.filter(s => s.date.slice(0, 10) <= toVal);
+  if (prodVal)   sales = sales.filter(s => s.productName === prodVal);
+  if (searchVal) sales = sales.filter(s =>
+    (s.productName || '').toLowerCase().includes(searchVal) ||
+    (s.color       || '').toLowerCase().includes(searchVal) ||
+    (s.note        || '').toLowerCase().includes(searchVal)
+  );
 
   // Sort
   const dir = window._ventasSortDir === 'asc' ? 1 : -1;
@@ -2973,10 +2979,12 @@ function initEventListeners() {
   });
 
   /* ── Ventas: filtros y orden ── */
+  document.getElementById('vf-search').addEventListener('input', renderVentasHistory);
   document.getElementById('vf-from').addEventListener('input', renderVentasHistory);
   document.getElementById('vf-to').addEventListener('input', renderVentasHistory);
   document.getElementById('vf-product').addEventListener('change', renderVentasHistory);
   document.getElementById('btn-clear-ventas-filter').addEventListener('click', () => {
+    document.getElementById('vf-search').value  = '';
     document.getElementById('vf-from').value    = '';
     document.getElementById('vf-to').value      = '';
     document.getElementById('vf-product').value = '';
