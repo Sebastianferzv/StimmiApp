@@ -1699,6 +1699,7 @@ function addPurchase({ items, shipping, customs }) {
   const purchases = getPurchases();
   purchases.push(purchase);
   savePurchases(purchases);
+  rebuildInventoryMaps();
   return purchase;
 }
 
@@ -1716,6 +1717,7 @@ function receivePurchase(purchaseId) {
   saveProducts(arr);
   p.status = 'received';
   savePurchases(purchases);
+  rebuildInventoryMaps();
 }
 
 function deletePurchase(purchaseId) {
@@ -1734,6 +1736,7 @@ function deletePurchase(purchaseId) {
     saveProducts(arr);
   }
   savePurchases(purchases.filter(p => p.id !== purchaseId));
+  rebuildInventoryMaps();
 }
 
 /* ── Data: Sales ── */
@@ -1763,9 +1766,33 @@ function buildSoldMap() {
   });
   return map;
 }
-function rebuildSoldMap() { window._soldMap = buildSoldMap(); }
-function colorSold(productId, colorName) { return (window._soldMap?.[productId]?.[colorName]) || 0; }
-function colorAvailable(c, productId) { return Math.max(0, c.total - colorReservedCount(c) - colorSold(productId, c.name)); }
+function buildPurchasedMap() {
+  const map = {};
+  getPurchases()
+    .filter(p => (p.status || 'received') !== 'transit')
+    .forEach(p => {
+      (p.items || []).forEach(item => {
+        if (!item.productId) return;
+        if (!map[item.productId]) map[item.productId] = {};
+        map[item.productId][item.colorName] = (map[item.productId][item.colorName] || 0) + (item.quantity || 0);
+      });
+    });
+  return map;
+}
+function rebuildInventoryMaps() {
+  window._soldMap      = buildSoldMap();
+  window._purchasedMap = buildPurchasedMap();
+}
+function rebuildSoldMap() { rebuildInventoryMaps(); }
+function colorSold(productId, colorName)      { return (window._soldMap?.[productId]?.[colorName])      || 0; }
+function colorPurchased(productId, colorName, fallback) {
+  const v = window._purchasedMap?.[productId]?.[colorName];
+  return v != null ? v : (fallback ?? 0);
+}
+function colorAvailable(c, productId) {
+  const total = colorPurchased(productId, c.name, c.total);
+  return Math.max(0, total - colorReservedCount(c) - colorSold(productId, c.name));
+}
 function _refreshedReservationOpts(productId, colorName) {
   const opts = window._reservationOpts || {};
   if (opts.maxQty === undefined) return opts; // inventory context, no recalc needed
@@ -1960,8 +1987,8 @@ function renderInventoryWarnings() {
   getProducts().forEach(p => {
     p.colors.forEach(c => {
       const sold  = colorSold(p.id, c.name);
-      const avail = c.total - sold;
-      if (avail < 0) errors.push({ product: p.name, color: c.name, sold, total: c.total });
+      const total = colorPurchased(p.id, c.name, c.total);
+      if (sold > total) errors.push({ product: p.name, color: c.name, sold, total });
     });
   });
   if (!errors.length) { el.innerHTML = ''; return; }
@@ -2143,7 +2170,7 @@ function renderProductDetail(productId) {
     const badgeCls = avail === 0 ? 'badge-available badge-zero' : 'badge-available';
     return `<tr>
       <td><strong>${c.name}</strong></td>
-      <td style="text-align:center;font-weight:600">${c.total - colorSold(productId, c.name)}</td>
+      <td style="text-align:center;font-weight:600">${colorPurchased(productId, c.name, c.total) - colorSold(productId, c.name)}</td>
       <td>
         <button class="btn btn-ghost btn-sm" data-open-reservations="${c.name}" data-pid="${p.id}"
           style="min-width:64px">
@@ -2834,6 +2861,7 @@ function updatePurchase(purchaseId, { items, shipping, customs }) {
   const idx = purchases.findIndex(p => p.id === purchaseId);
   if (idx >= 0) purchases[idx] = { ...old, items, shipping: shipping || 0, customs: customs || 0, total };
   savePurchases(purchases);
+  rebuildInventoryMaps();
 }
 
 function renderEditPurchaseTotal() {
@@ -4115,7 +4143,7 @@ async function init() {
   if (overlay) overlay.style.display = 'flex';
   await initCloudData();
   if (overlay) overlay.style.display = 'none';
-  rebuildSoldMap();
+  rebuildInventoryMaps();
 
   const namesFixed = fixDenormalizedProductNames();
   if (namesFixed && _cloudOK) {
