@@ -1583,7 +1583,7 @@ function addColorToProduct(productId, colorName, stock) {
   if (p.colors.some(c => c.name.toLowerCase() === colorName.toLowerCase())) return false;
   // Remove "Única" placeholder if it has no stock/sales yet
   if (p.colors.length === 1 && p.colors[0].name === 'Única' &&
-      p.colors[0].total === 0 && p.colors[0].sold === 0 && colorReservedCount(p.colors[0]) === 0) {
+      p.colors[0].total === 0 && colorSold(productId, p.colors[0].name) === 0 && colorReservedCount(p.colors[0]) === 0) {
     p.colors = [];
   }
   p.colors.push({ name: colorName, total: parseInt(stock) || 0, reserved: 0, sold: 0 });
@@ -1613,8 +1613,6 @@ function recordSale(productId, colorName, quantity, note = '', saleDate = null, 
   if (!p) return null;
   const c = p.colors.find(c => c.name === colorName);
   if (!c) return null;
-  c.sold += quantity;
-  saveProducts(arr);
   const sale = {
     id: genId(), date: saleDate ? new Date(saleDate).toISOString() : new Date().toISOString(),
     productId, productName: p.name, color: colorName,
@@ -1624,6 +1622,7 @@ function recordSale(productId, colorName, quantity, note = '', saleDate = null, 
   const sales = getSales();
   sales.push(sale);
   saveSales(sales);
+  rebuildSoldMap();
   return sale;
 }
 
@@ -1637,32 +1636,15 @@ function deleteSale(saleId) {
   const sales = getSales();
   const idx = sales.findIndex(s => s.id === saleId);
   if (idx === -1) return;
-  const sale = sales[idx];
-  const products = getProducts();
-  const p = products.find(p => p.id === sale.productId);
-  if (p) {
-    const c = p.colors.find(c => c.name === sale.color);
-    if (c) c.sold = Math.max(0, c.sold - sale.quantity);
-    saveProducts(products);
-  }
   sales.splice(idx, 1);
   saveSales(sales);
+  rebuildSoldMap();
 }
 
 function updateSale(saleId, { quantity, pricePerUnit, date, note, paid }) {
   const sales = getSales();
   const sale = sales.find(s => s.id === saleId);
   if (!sale) return;
-  const diff = quantity - sale.quantity;
-  if (diff !== 0) {
-    const products = getProducts();
-    const p = products.find(p => p.id === sale.productId);
-    if (p) {
-      const c = p.colors.find(c => c.name === sale.color);
-      if (c) c.sold = Math.max(0, c.sold + diff);
-      saveProducts(products);
-    }
-  }
   sale.quantity     = quantity;
   sale.pricePerUnit = pricePerUnit;
   sale.total        = quantity * pricePerUnit;
@@ -1670,6 +1652,7 @@ function updateSale(saleId, { quantity, pricePerUnit, date, note, paid }) {
   sale.note         = (note || '').trim();
   if (paid !== undefined) sale.paid = paid;
   saveSales(sales);
+  rebuildSoldMap();
 }
 
 /* ── Data: Purchases ── */
@@ -1752,7 +1735,26 @@ function colorReservedCount(c) {
     return c.reservations.reduce((s, r) => s + (r.quantity || 0), 0);
   return c.reserved || 0;
 }
-function colorAvailable(c)       { return Math.max(0, c.total - colorReservedCount(c) - c.sold); }
+function buildSoldMap() {
+  const map = {};
+  getSales().forEach(s => {
+    if (s.type === 'pack') {
+      (s.packItems || []).forEach(item => {
+        if (!item.productId) return;
+        if (!map[item.productId]) map[item.productId] = {};
+        map[item.productId][item.colorName] = (map[item.productId][item.colorName] || 0) + (item.quantity || 0);
+      });
+    } else {
+      if (!s.productId) return;
+      if (!map[s.productId]) map[s.productId] = {};
+      map[s.productId][s.color] = (map[s.productId][s.color] || 0) + (s.quantity || 0);
+    }
+  });
+  return map;
+}
+function rebuildSoldMap() { window._soldMap = buildSoldMap(); }
+function colorSold(productId, colorName) { return (window._soldMap?.[productId]?.[colorName]) || 0; }
+function colorAvailable(c, productId) { return Math.max(0, c.total - colorReservedCount(c) - colorSold(productId, c.name)); }
 function _refreshedReservationOpts(productId, colorName) {
   const opts = window._reservationOpts || {};
   if (opts.maxQty === undefined) return opts; // inventory context, no recalc needed
@@ -1770,7 +1772,7 @@ function transitQtyForColor(productId, colorName) {
     .filter(i => i.productId === productId && i.colorName === colorName)
     .reduce((s, i) => s + i.quantity, 0);
 }
-function productAvailable(p)     { return p.colors.reduce((s, c) => s + colorAvailable(c), 0); }
+function productAvailable(p)     { return p.colors.reduce((s, c) => s + colorAvailable(c, p.id), 0); }
 function productTotalReserved(p) { return p.colors.reduce((s, c) => s + colorReservedCount(c), 0); }
 
 function addReservation(productId, colorName, personName, quantity) {
@@ -1795,7 +1797,7 @@ function removeReservation(productId, colorName, reservationId) {
   c.reserved = colorReservedCount(c);
   saveProducts(arr);
 }
-function productTotalSold(p)     { return p.colors.reduce((s, c) => s + (c.sold || 0), 0); }
+function productTotalSold(p)     { return p.colors.reduce((s, c) => s + colorSold(p.id, c.name), 0); }
 function totalSpent()            { return getPurchases().reduce((s, p) => s + p.total, 0) + getSupplies().reduce((s, s2) => s + s2.total, 0); }
 function totalEarned()           { return getSales().filter(s => s.paid !== false).reduce((s, s2) => s + s2.total, 0); }
 
@@ -1829,17 +1831,6 @@ function deletePackTemplate(id) {
 
 /* ── Data: Pack sale records (stored in stimmi_sales with type='pack') ── */
 function recordPackSale(template, note) {
-  // Deduct stock for additional items
-  if (template.items && template.items.length) {
-    const products = getProducts();
-    template.items.forEach(item => {
-      const p = products.find(p => p.id === item.productId);
-      if (!p) return;
-      const c = p.colors.find(c => c.name === item.colorName);
-      if (c) c.sold += item.quantity;
-    });
-    saveProducts(products);
-  }
   // Record as a sale entry
   const sale = {
     id: genId(), date: new Date().toISOString(),
@@ -1857,6 +1848,7 @@ function recordPackSale(template, note) {
   const sales = getSales();
   sales.push(sale);
   saveSales(sales);
+  rebuildSoldMap();
   return sale;
 }
 function categoryCharmsSold(catName) {
@@ -2113,13 +2105,13 @@ function renderProductDetail(productId) {
   if (!p) return;
   document.getElementById('detail-modal-title').textContent = p.name;
   const img      = p.imageUrl || PLACEHOLDER;
-  const hasStock = p.colors.some(c => colorAvailable(c) > 0);
+  const hasStock = p.colors.some(c => colorAvailable(c, productId) > 0);
   const rows = p.colors.map(c => {
-    const avail    = colorAvailable(c);
+    const avail    = colorAvailable(c, productId);
     const badgeCls = avail === 0 ? 'badge-available badge-zero' : 'badge-available';
     return `<tr>
       <td><strong>${c.name}</strong></td>
-      <td style="text-align:center;font-weight:600">${c.total - c.sold}</td>
+      <td style="text-align:center;font-weight:600">${c.total - colorSold(productId, c.name)}</td>
       <td>
         <button class="btn btn-ghost btn-sm" data-open-reservations="${c.name}" data-pid="${p.id}"
           style="min-width:64px">
@@ -2240,9 +2232,9 @@ function renderEditColorList(productId) {
       <span style="min-width:80px">${c.name}</span>
       <div style="display:flex;align-items:center;gap:.35rem;flex:1">
         <label style="font-size:.75rem;color:var(--c-text-soft);white-space:nowrap">Stock:</label>
-        <input type="number" class="inline-edit edit-color-stock" min="0" value="${c.total}" style="width:60px" data-sold="${c.sold}">
+        <input type="number" class="inline-edit edit-color-stock" min="0" value="${c.total}" style="width:60px" data-sold="${colorSold(productId, c.name)}">
       </div>
-      <small style="color:var(--c-text-soft);font-size:.75rem;white-space:nowrap">${c.sold} vendidas</small>
+      <small style="color:var(--c-text-soft);font-size:.75rem;white-space:nowrap">${colorSold(productId, c.name)} vendidas</small>
       <button type="button" class="btn-icon" data-ep-delete-color="${c.name}" data-pid="${productId}" title="Quitar color">✕</button>
     </div>`).join('') +
     `<div id="edit-stock-balance" style="font-size:.8rem;padding:.5rem .25rem;display:flex;gap:.4rem;align-items:center">
@@ -2309,7 +2301,7 @@ function renderReservationsModal(productId, colorName, opts = {}) {
   if (window._reservationMax !== null) {
     hint.textContent = `En tránsito: ${opts.transitTotal} · Disponibles para reservar: ${window._reservationMax}`;
   } else {
-    hint.textContent = `Disponibles en inventario: ${colorAvailable(c)}`;
+    hint.textContent = `Disponibles en inventario: ${colorAvailable(c, productId)}`;
   }
   list.prepend(hint);
 }
@@ -2322,11 +2314,11 @@ function renderSellModal(p) {
   document.getElementById('sell-note').value = '';
   document.getElementById('sell-date').value = '';
   document.getElementById('sell-qty-err').classList.remove('show');
-  const sellableColors = p.colors.filter(c => colorAvailable(c) > 0 || colorReservedCount(c) > 0);
+  const sellableColors = p.colors.filter(c => colorAvailable(c, p.id) > 0 || colorReservedCount(c) > 0);
   const sel = document.getElementById('sell-color');
   sel.innerHTML = sellableColors.length
     ? sellableColors.map(c => {
-        const avail = colorAvailable(c);
+        const avail = colorAvailable(c, p.id);
         const res   = colorReservedCount(c);
         let label = c.name;
         if (avail > 0 && res > 0) label += ` (${avail} disp. + ${res} reserv.)`;
@@ -3223,7 +3215,7 @@ function initEventListeners() {
       (t.items || []).forEach(item => {
         const p = products.find(pr => pr.id === item.productId);
         const c = p?.colors.find(c => c.name === item.colorName);
-        if (!c || colorAvailable(c) < item.quantity) stockOK = false;
+        if (!c || colorAvailable(c, item.productId) < item.quantity) stockOK = false;
       });
       if (!stockOK) { showToast('Stock insuficiente para uno o más productos del pack.'); return; }
       _showPackSellView(t);
@@ -3458,7 +3450,7 @@ function initEventListeners() {
     const color = window._reservationColorName;
     const p = getProductById(pid);
     const c = p?.colors.find(c => c.name === color);
-    const maxReservable = window._reservationMax !== null ? window._reservationMax : colorAvailable(c);
+    const maxReservable = window._reservationMax !== null ? window._reservationMax : colorAvailable(c, pid);
     if (qty > maxReservable) {
       errEl.textContent = window._reservationMax !== null
         ? `Solo hay ${maxReservable} unidades disponibles para reservar en este pedido.`
@@ -3569,7 +3561,7 @@ function initEventListeners() {
     const selectedRes = window._sellReservationId
       ? (color.reservations || []).find(r => r.id === window._sellReservationId)
       : null;
-    const effectiveAvail = colorAvailable(color) + (selectedRes ? selectedRes.quantity : 0);
+    const effectiveAvail = colorAvailable(color, p.id) + (selectedRes ? selectedRes.quantity : 0);
     if (qty > effectiveAvail) {
       errEl.textContent = `Solo hay ${effectiveAvail} unidad${effectiveAvail !== 1 ? 'es' : ''} disponible${effectiveAvail !== 1 ? 's' : ''} de ${colorName}${selectedRes ? ' (incluyendo reserva)' : ''}.`;
       errEl.classList.add('show'); return;
@@ -4091,6 +4083,7 @@ async function init() {
   if (overlay) overlay.style.display = 'flex';
   await initCloudData();
   if (overlay) overlay.style.display = 'none';
+  rebuildSoldMap();
 
   const namesFixed = fixDenormalizedProductNames();
   if (namesFixed && _cloudOK) {
