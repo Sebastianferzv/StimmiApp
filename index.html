@@ -2410,11 +2410,16 @@ function renderVentasHistory() {
   const allSales = getSales().slice();
   const el = document.getElementById('ventas-history');
 
-  // Populate product filter (preserve current selection)
+  // Build current name lookup by productId
+  const nameById = Object.fromEntries(getProducts().map(p => [p.id, p.name]));
+  // Resolve display name: prefer current product name, fall back to stored name
+  allSales.forEach(s => { s._displayName = (s.productId && nameById[s.productId]) || s.productName; });
+
+  // Populate product filter using resolved names (preserve current selection)
   const prodSel = document.getElementById('vf-product');
   if (prodSel) {
     const current = prodSel.value;
-    const names   = [...new Set(allSales.map(s => s.productName))].sort((a, b) => a.localeCompare(b));
+    const names   = [...new Set(allSales.map(s => s._displayName))].sort((a, b) => a.localeCompare(b));
     prodSel.innerHTML = '<option value="">Todos</option>' + names.map(n => `<option value="${n}"${n === current ? ' selected' : ''}>${n}</option>`).join('');
   }
 
@@ -2428,18 +2433,18 @@ function renderVentasHistory() {
   let sales = allSales;
   if (fromVal)   sales = sales.filter(s => s.date.slice(0, 10) >= fromVal);
   if (toVal)     sales = sales.filter(s => s.date.slice(0, 10) <= toVal);
-  if (prodVal)   sales = sales.filter(s => s.productName === prodVal);
+  if (prodVal)   sales = sales.filter(s => s._displayName === prodVal);
   if (searchVal) sales = sales.filter(s =>
-    (s.productName || '').toLowerCase().includes(searchVal) ||
-    (s.color       || '').toLowerCase().includes(searchVal) ||
-    (s.note        || '').toLowerCase().includes(searchVal)
+    (s._displayName || '').toLowerCase().includes(searchVal) ||
+    (s.color        || '').toLowerCase().includes(searchVal) ||
+    (s.note         || '').toLowerCase().includes(searchVal)
   );
 
   // Sort
   const dir = window._ventasSortDir === 'asc' ? 1 : -1;
   sales.sort((a, b) => {
-    const va = window._ventasSortBy === 'date' ? a.date : a.productName.toLowerCase();
-    const vb = window._ventasSortBy === 'date' ? b.date : b.productName.toLowerCase();
+    const va = window._ventasSortBy === 'date' ? a.date : a._displayName.toLowerCase();
+    const vb = window._ventasSortBy === 'date' ? b.date : b._displayName.toLowerCase();
     return va < vb ? -dir : va > vb ? dir : 0;
   });
 
@@ -2465,7 +2470,7 @@ function renderVentasHistory() {
     </tr></thead>
     <tbody>${sales.map(s => {
       const isPack = s.type === 'pack';
-      const nameLine = isPack ? `📦 ${s.productName}` : s.productName;
+      const nameLine = isPack ? `📦 ${s._displayName}` : s._displayName;
       const subLine = s.note
         ? `<br><span style="font-size:.76rem;color:var(--c-text-soft);font-style:italic">${s.note}</span>`
         : '';
