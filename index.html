@@ -230,6 +230,16 @@ main { padding: 2rem; max-width: 1200px; margin: 0 auto; }
   display: flex; align-items: center; justify-content: center;
 }
 
+/* ── Inventory warnings ─────────────────────────────────────── */
+.inventory-warning {
+  background: #fff3cd; border: 1.5px solid #f0c040;
+  border-radius: var(--r-card); padding: .85rem 1.1rem;
+  margin-bottom: 1rem; font-size: .85rem; color: #7a5c00;
+}
+.inventory-warning strong { display: block; margin-bottom: .35rem; font-size: .9rem; }
+.inventory-warning ul { margin: 0; padding-left: 1.2rem; }
+.inventory-warning li { margin-bottom: .2rem; }
+
 /* ── Empty state ────────────────────────────────────────────── */
 .empty-state {
   text-align: center; padding: 4rem 2rem; color: var(--c-text-soft);
@@ -609,6 +619,7 @@ tbody tr:hover td { background: #faf6ff; }
       <button class="btn btn-ghost btn-sm btn-show-hidden" id="btn-show-hidden">Ver ocultos</button>
       <button class="btn btn-primary btn-sm" id="btn-new-product-inventory">+ Nuevo producto</button>
     </div>
+    <div id="inventory-warnings"></div>
     <div id="product-grid" class="product-grid"></div>
     <div id="empty-inventory" class="empty-state" style="display:none">
       <div class="empty-icon">📦</div>
@@ -1942,7 +1953,28 @@ function _categoryCard(catName, products, categories) {
   </div>`;
 }
 
+function renderInventoryWarnings() {
+  const el = document.getElementById('inventory-warnings');
+  if (!el) return;
+  const errors = [];
+  getProducts().forEach(p => {
+    p.colors.forEach(c => {
+      const sold  = colorSold(p.id, c.name);
+      const avail = c.total - sold;
+      if (avail < 0) errors.push({ product: p.name, color: c.name, sold, total: c.total });
+    });
+  });
+  if (!errors.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="inventory-warning">
+    <strong>⚠️ Error en base de datos — vendidos superan el stock registrado</strong>
+    <ul>${errors.map(e =>
+      `<li>${e.product} – ${e.color}: ${e.sold} vendidos pero solo ${e.total} en stock</li>`
+    ).join('')}</ul>
+  </div>`;
+}
+
 function renderProductGrid() {
+  renderInventoryWarnings();
   const allProducts = getProducts();
   const categories  = getCategories();
   const grid  = document.getElementById('product-grid');
