@@ -1,4 +1,4 @@
-const CACHE = 'stimmilab-v4';
+const CACHE = 'stimmilab-v5';
 const STATIC = ['/logo.png', '/icon.svg', '/manifest.json'];
 
 self.addEventListener('install', e => {
