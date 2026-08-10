@@ -1751,30 +1751,35 @@ function colorReservedCount(c) {
 }
 function buildSoldMap() {
   const map = {};
+  const nameToId = Object.fromEntries(getProducts().map(p => [p.name, p.id]));
   getSales().forEach(s => {
     if (s.type === 'pack') {
       (s.packItems || []).forEach(item => {
-        if (!item.productId) return;
-        if (!map[item.productId]) map[item.productId] = {};
-        map[item.productId][item.colorName] = (map[item.productId][item.colorName] || 0) + (item.quantity || 0);
+        const pid = item.productId || nameToId[item.productName];
+        if (!pid) return;
+        if (!map[pid]) map[pid] = {};
+        map[pid][item.colorName] = (map[pid][item.colorName] || 0) + (item.quantity || 0);
       });
     } else {
-      if (!s.productId) return;
-      if (!map[s.productId]) map[s.productId] = {};
-      map[s.productId][s.color] = (map[s.productId][s.color] || 0) + (s.quantity || 0);
+      const pid = s.productId || nameToId[s.productName];
+      if (!pid) return;
+      if (!map[pid]) map[pid] = {};
+      map[pid][s.color] = (map[pid][s.color] || 0) + (s.quantity || 0);
     }
   });
   return map;
 }
 function buildPurchasedMap() {
   const map = {};
+  const nameToId = Object.fromEntries(getProducts().map(p => [p.name, p.id]));
   getPurchases()
     .filter(p => (p.status || 'received') !== 'transit')
     .forEach(p => {
       (p.items || []).forEach(item => {
-        if (!item.productId) return;
-        if (!map[item.productId]) map[item.productId] = {};
-        map[item.productId][item.colorName] = (map[item.productId][item.colorName] || 0) + (item.quantity || 0);
+        const pid = item.productId || nameToId[item.productName];
+        if (!pid) return;
+        if (!map[pid]) map[pid] = {};
+        map[pid][item.colorName] = (map[pid][item.colorName] || 0) + (item.quantity || 0);
       });
     });
   return map;
