@@ -1397,22 +1397,24 @@ async function initCloudData() {
         return;
       }
     }
-    const lsProds = storageOK ? JSON.parse(localStorage.getItem(KEYS.products)  || '[]') : [];
-    const lsPurs  = storageOK ? JSON.parse(localStorage.getItem(KEYS.purchases) || '[]') : [];
-    const lsSales = storageOK ? JSON.parse(localStorage.getItem(KEYS.sales)     || '[]') : [];
-    const mProds  = _mergeById(products,  lsProds);
-    const mPurs   = _mergeById(purchases, lsPurs);
-    const mSales  = _mergeById(sales,     lsSales);
-    if (mProds.length  > products.length)  cloudPut(KEYS.products,  mProds).catch(() => {});
-    if (mPurs.length   > purchases.length) cloudPut(KEYS.purchases, mPurs).catch(() => {});
-    if (mSales.length  > sales.length)     cloudPut(KEYS.sales,     mSales).catch(() => {});
-    _mem[KEYS.products]      = mProds;
-    _mem[KEYS.purchases]     = mPurs;
-    _mem[KEYS.sales]         = mSales;
+    // Neon is the source of truth — use cloud data directly, no localStorage merging
+    _mem[KEYS.products]      = products;
+    _mem[KEYS.purchases]     = purchases;
+    _mem[KEYS.sales]         = sales;
     _mem[KEYS.categories]    = categories;
     _mem[KEYS.packs]         = packs;
     _mem[KEYS.packTemplates] = packTemplates;
     _mem[KEYS.supplies]      = supplies;
+    // Mirror cloud data to localStorage so offline fallback stays current
+    if (storageOK) {
+      localStorage.setItem(KEYS.products,      JSON.stringify(products));
+      localStorage.setItem(KEYS.purchases,     JSON.stringify(purchases));
+      localStorage.setItem(KEYS.sales,         JSON.stringify(sales));
+      localStorage.setItem(KEYS.categories,    JSON.stringify(categories));
+      localStorage.setItem(KEYS.packs,         JSON.stringify(packs));
+      localStorage.setItem(KEYS.packTemplates, JSON.stringify(packTemplates));
+      localStorage.setItem(KEYS.supplies,      JSON.stringify(supplies));
+    }
     setCloudBtn('🌐', 'Conectado a Neon');
   } catch(e) {
     _cloudOK = false;
