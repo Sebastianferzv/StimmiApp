@@ -1628,7 +1628,7 @@ function recordSale(productId, colorName, quantity, note = '', saleDate = null, 
   const c = p.colors.find(c => c.name === colorName);
   if (!c) return null;
   const sale = {
-    id: genId(), date: saleDate ? new Date(saleDate).toISOString() : new Date().toISOString(),
+    id: genId(), date: saleDate ? localDateToISO(saleDate) : new Date().toISOString(),
     productId, productName: p.name, color: colorName,
     quantity, pricePerUnit: p.price, total: quantity * p.price,
     note: note.trim(), paid,
@@ -1942,7 +1942,17 @@ function updateCategoryImage(catName, imageUrl) {
 
 /* ── Formatters ── */
 const fmt = n => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n);
-const fmtDate = iso => new Date(iso).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  // Use local date parts to avoid UTC-midnight shifting to the previous day in Chile timezone
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+// Convert a date-input value ("YYYY-MM-DD") to ISO using local noon — avoids UTC midnight timezone shift
+function localDateToISO(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d, 12).toISOString();
+}
 
 /* ── Placeholder SVG ── */
 const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150' viewBox='0 0 200 150'%3E%3Crect width='200' height='150' fill='%23f0eafa'/%3E%3Ctext x='100' y='80' text-anchor='middle' fill='%23c9b8e8' font-size='40'%3E🌸%3C/text%3E%3C/svg%3E`;
@@ -3808,7 +3818,7 @@ function initEventListeners() {
     errEl.classList.remove('show');
     const note = document.getElementById('edit-sale-note').value;
     const paid = document.getElementById('edit-paid-toggle').classList.contains('paid');
-    updateSale(saleId, { quantity: qty, pricePerUnit: price, date: date ? new Date(date).toISOString() : new Date().toISOString(), note, paid });
+    updateSale(saleId, { quantity: qty, pricePerUnit: price, date: date ? localDateToISO(date) : new Date().toISOString(), note, paid });
     renderVentasHistory(); renderProductGrid(); renderBalance();
     closeTopModal();
     showToast('Venta actualizada ✓');
