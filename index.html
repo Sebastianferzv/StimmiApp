@@ -2049,7 +2049,6 @@ function renderProductDetail(productId) {
       <td><strong>${c.name}</strong></td>
       <td style="text-align:center;font-weight:600">${colorPurchased(productId, c.name, c.total) - colorSold(productId, c.name)}</td>
       <td><span class="${badgeCls}">${avail}</span></td>
-      <td><button class="btn-icon" data-delete-color="${c.name}" data-pid="${p.id}" title="Eliminar color">✕</button></td>
     </tr>`;
   }).join('');
   document.getElementById('detail-modal-body').innerHTML = `
@@ -2064,7 +2063,7 @@ function renderProductDetail(productId) {
     </div>
     <div class="color-table-wrap">
       <table>
-        <thead><tr><th>Color</th><th>En inventario</th><th>Disponibles</th><th></th></tr></thead>
+        <thead><tr><th>Color</th><th>En inventario</th><th>Disponibles</th></tr></thead>
         <tbody id="color-tbody">${rows}</tbody>
       </table>
     </div>
@@ -3273,19 +3272,6 @@ document.getElementById('cat-img-wrap').addEventListener('click', () => {
     renderProductDetail(pid);
   });
 
-  /* ── Detail: delete color ── */
-  document.getElementById('modal-product-detail').addEventListener('click', e => {
-    const btn = e.target.closest('[data-delete-color]');
-    if (!btn) return;
-    const pid = btn.dataset.pid, colorName = btn.dataset.deleteColor;
-    const arr = getProducts();
-    const p   = arr.find(p => p.id === pid);
-    if (!p || p.colors.length <= 1) { showToast('El producto debe tener al menos un color.'); return; }
-    p.colors = p.colors.filter(c => c.name !== colorName);
-    saveProducts(arr);
-    renderProductDetail(pid); renderProductGrid();
-    showToast('Color eliminado');
-  });
 
   /* ── Sell modal close ── */
   document.getElementById('sell-close').addEventListener('click', closeTopModal);
