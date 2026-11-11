@@ -1479,6 +1479,72 @@ function resizeImage(file, cb, maxW = 900, maxH = 900, quality = 0.82) {
   reader.readAsDataURL(file);
 }
 
+/* ── Image upload (Vercel Blob) ── */
+// Uploads a data URL to /api/upload and resolves with the public Blob URL.
+async function uploadImage(dataUrl, name) {
+  const r = await fetch('/api/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dataUrl, name }),
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const { url } = await r.json();
+  if (!url) throw new Error('No URL returned');
+  return url;
+}
+
+// Resizes the picked file, shows a local preview via onPreview, uploads it,
+// calls onDone with the Blob URL and resolves when finished (success or failure).
+// On failure shows a toast and does not call onDone.
+function resizeAndUpload(file, name, onDone, onPreview) {
+  return new Promise(resolve => {
+    resizeImage(file, async dataUrl => {
+      if (onPreview) onPreview(dataUrl);
+      showToast('Subiendo foto…');
+      try {
+        const url = await uploadImage(dataUrl, name);
+        onDone(url);
+        showToast('Foto guardada ✓');
+      } catch (e) {
+        console.error('Image upload failed:', e);
+        showToast('⚠️ No se pudo subir la foto — revisa la conexión e intenta de nuevo');
+      }
+      resolve();
+    });
+  });
+}
+
+// One-time migration: moves images stored inline as base64 (data:...) to Vercel Blob,
+// so the products/categories JSON stays small enough for the API body limit.
+async function migrateInlineImages() {
+  if (!_cloudOK) return;
+  const products = getProducts();
+  const cats     = getCategories();
+  const pending  = [
+    ...products.filter(p => (p.imageUrl || '').startsWith('data:')).map(o => ({ o, name: o.id })),
+    ...cats.filter(c => (c.imageUrl || '').startsWith('data:')).map(o => ({ o, name: 'cat-' + o.name })),
+  ];
+  if (!pending.length) return;
+  showToast(`Migrando ${pending.length} foto(s) a la nube…`);
+  let ok = 0;
+  for (const { o, name } of pending) {
+    try { o.imageUrl = await uploadImage(o.imageUrl, name); ok++; }
+    catch (e) { console.error('Migration upload failed:', name, e); }
+  }
+  if (!ok) { showToast('⚠️ No se pudieron migrar las fotos'); return; }
+  // Re-read current data so edits made during the migration aren't lost
+  const byId = new Map(products.map(p => [p.id, p.imageUrl]));
+  const freshP = getProducts();
+  freshP.forEach(p => { if ((p.imageUrl || '').startsWith('data:') && byId.has(p.id) && !byId.get(p.id).startsWith('data:')) p.imageUrl = byId.get(p.id); });
+  saveProducts(freshP);
+  const byName = new Map(cats.map(c => [c.name, c.imageUrl]));
+  const freshC = getCategories();
+  freshC.forEach(c => { if ((c.imageUrl || '').startsWith('data:') && byName.has(c.name) && !byName.get(c.name).startsWith('data:')) c.imageUrl = byName.get(c.name); });
+  saveCategories(freshC);
+  renderProductGrid();
+  showToast(ok === pending.length ? 'Fotos migradas ✓' : `⚠️ Se migraron ${ok} de ${pending.length} fotos`);
+}
+
 /* ── ID generator ── */
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -2085,10 +2151,13 @@ function renderProductDetail(productId) {
     fi.onchange = () => {
       const file = fi.files[0];
       if (!file) return;
-      resizeImage(file, url => {
+      resizeAndUpload(file, p.id, url => {
         updateProductImage(p.id, url);
         renderProductDetail(p.id);
         renderProductGrid();
+      }, preview => {
+        const img = document.querySelector('#detail-img-wrap img');
+        if (img) img.src = preview;
       });
     };
     fi.click();
@@ -2142,10 +2211,16 @@ function renderEditModal(productId) {
   fileInput.onchange = () => {
     const file = fileInput.files[0];
     if (!file) return;
-    resizeImage(file, url => {
+    const original = window._epImageB64;
+    window._epImageUploading = true;
+    resizeAndUpload(file, productId, url => {
       window._epImageB64 = url;
       thumb.src = url;
-    });
+    }, preview => { thumb.src = preview; })
+      .then(() => {
+        window._epImageUploading = false;
+        if (window._epImageB64 === original) thumb.src = original; // upload failed: revert preview
+      });
   };
   document.getElementById('edit-img-preview').onclick = () => fileInput.click();
 }
@@ -3019,11 +3094,12 @@ document.getElementById('cat-img-wrap').addEventListener('click', () => {
     fi.onchange = () => {
       const file = fi.files[0];
       if (!file) return;
-      resizeImage(file, url => {
-        updateCategoryImage(window._packCategory, url);
+      const catName = window._packCategory;
+      resizeAndUpload(file, 'cat-' + catName, url => {
+        updateCategoryImage(catName, url);
         document.getElementById('cat-img').src = url;
         renderProductGrid();
-      });
+      }, preview => { document.getElementById('cat-img').src = preview; });
     };
     fi.click();
   });
@@ -3203,6 +3279,7 @@ document.getElementById('cat-img-wrap').addEventListener('click', () => {
       errEl.classList.add('show'); return;
     }
     errEl.classList.remove('show');
+    if (window._epImageUploading) { showToast('Espera a que termine de subir la foto…'); return; }
     updateProduct(id, {
       name,
       price:       document.getElementById('ep-price').value,
@@ -3820,6 +3897,7 @@ async function init() {
   addPurchaseItemRow();
   addSupplyItemRow();
   renderProductGrid();
+  migrateInlineImages();
   renderTransitTab();
   renderBalance();
     initEventListeners();
