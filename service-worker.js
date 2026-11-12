@@ -1,4 +1,4 @@
-const CACHE = 'stimmilab-v6';
+const CACHE = 'stimmilab-v7';
 const STATIC = ['/logo.png', '/icon.svg', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -17,6 +17,17 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
+
+  // Product images: immutable, cache-first (also available offline once seen)
+  if (url.pathname === '/api/image') {
+    e.respondWith(
+      caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
+        if (res.ok) { const clone = res.clone(); caches.open(CACHE).then(c => c.put(e.request, clone)); }
+        return res;
+      }))
+    );
+    return;
+  }
 
   // API calls: network-first, no cache
   if (url.pathname.startsWith('/api/')) {

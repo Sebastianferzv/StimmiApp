@@ -26,12 +26,13 @@ module.exports = async function handler(req, res) {
 
     const ext = contentType.split('/')[1].replace('jpeg', 'jpg');
     const safeName = String(name || 'img').replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || 'img';
+    // The store is private, so images are served through /api/image (see api/image.js)
     const blob = await put(`images/${safeName}.${ext}`, buffer, {
-      access: 'public',
+      access: 'private',
       contentType,
       addRandomSuffix: true,
     });
-    return res.status(200).json({ url: blob.url });
+    return res.status(200).json({ url: '/api/image?p=' + encodeURIComponent(blob.pathname) });
   } catch (err) {
     console.error('Upload error:', err.message);
     return res.status(500).json({ error: err.message });
