@@ -9,8 +9,10 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN not configured' });
+  // Newer Vercel Blob connections provide BLOB_STORE_ID (auth via OIDC, handled by the SDK);
+  // older ones provide BLOB_READ_WRITE_TOKEN. Either works.
+  if (!process.env.BLOB_STORE_ID && !process.env.BLOB_READ_WRITE_TOKEN) {
+    return res.status(500).json({ error: 'Blob store not connected (BLOB_STORE_ID missing)' });
   }
 
   try {
