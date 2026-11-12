@@ -1487,10 +1487,10 @@ async function uploadImage(dataUrl, name) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ dataUrl, name }),
   });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  const { url } = await r.json();
-  if (!url) throw new Error('No URL returned');
-  return url;
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.error || `HTTP ${r.status}`);
+  if (!body.url) throw new Error('sin conexión');
+  return body.url;
 }
 
 // Resizes the picked file, shows a local preview via onPreview, uploads it,
@@ -1507,7 +1507,7 @@ function resizeAndUpload(file, name, onDone, onPreview) {
         showToast('Foto guardada ✓');
       } catch (e) {
         console.error('Image upload failed:', e);
-        showToast('⚠️ No se pudo subir la foto — revisa la conexión e intenta de nuevo');
+        showToast('⚠️ No se pudo subir la foto: ' + e.message);
       }
       resolve();
     });
@@ -1525,13 +1525,17 @@ async function migrateInlineImages() {
     ...cats.filter(c => (c.imageUrl || '').startsWith('data:')).map(o => ({ o, name: 'cat-' + o.name })),
   ];
   if (!pending.length) return;
-  showToast(`Migrando ${pending.length} foto(s) a la nube…`);
   let ok = 0;
   for (const { o, name } of pending) {
-    try { o.imageUrl = await uploadImage(o.imageUrl, name); ok++; }
-    catch (e) { console.error('Migration upload failed:', name, e); }
+    try {
+      o.imageUrl = await uploadImage(o.imageUrl, name);
+      if (!ok) showToast(`Migrando ${pending.length} foto(s) a la nube…`);
+      ok++;
+    } catch (e) {
+      console.error('Migration upload failed:', name, e);
+      if (!ok) { console.warn('Image migration skipped:', e.message); return; } // server not ready: stop silently, retry next load
+    }
   }
-  if (!ok) { showToast('⚠️ No se pudieron migrar las fotos'); return; }
   // Re-read current data so edits made during the migration aren't lost
   const byId = new Map(products.map(p => [p.id, p.imageUrl]));
   const freshP = getProducts();
